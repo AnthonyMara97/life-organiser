@@ -98,6 +98,27 @@ Newest first. One entry per session where something was genuinely learned.
 
 ---
 
+### 2026-11-15 — Environment and scaffold
+
+**Built:** WSL Ubuntu toolchain (nvm, Node 26.13.1, pnpm 12.21.0), the project
+directory, and a Next.js 16 scaffold that passes build, typecheck and lint.
+
+**Learned:** two things that had nothing to do with app code. First, "installed" is
+not the same as "available" — Node existed only in interactive shells, because
+`.bashrc` skips setup for non-interactive ones, so a correct install looked broken.
+Second, a terminal executes whatever it is given: pasting an error message into it
+makes bash try to run the error text as programs. Both cost real time and neither
+was a code problem.
+
+**Still fuzzy:** what `cacheComponents: true` will actually do to a data-backed page,
+and where the Windows/Linux boundary ends (why quotes and `$VAR` vanish between
+PowerShell and bash).
+
+**Next:** decide `@types/node` version and the caching flag, then write the three
+date helpers with tests.
+
+---
+
 ### 2026-11-15 — Project planning
 
 **Built:** nothing yet. Product brief, feature spec, architecture, roadmap and

@@ -12,6 +12,10 @@ learning vehicle for a career change into full stack development.
 The owner is **learning**. Code quality matters, but comprehensibility matters
 more. Do not reach for clever abstractions.
 
+**Read `docs/07-handover.md` first.** It records the current state of the repo and
+the machine, the decisions still waiting on Anthony, and the next action. It is
+rewritten at the end of every session.
+
 ## Decisions belong to the owner (added 15 Nov 2026)
 
 Anthony makes every decision. Never implement a decision he has not approved —
