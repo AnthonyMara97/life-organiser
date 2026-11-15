@@ -1,0 +1,403 @@
+# 03 — Architecture
+
+> Status: draft for review · Last updated: 15 Nov 2026
+>
+> This document is the reference for **how** we build. Anything technical that is
+> decided belongs here, including what we rejected and why (§12).
+
+## 1. Stack and why
+
+| Layer | Choice | What Anthony learns | Why this and not the alternative |
+|---|---|---|---|
+| Language | **TypeScript**, strict | Types, interfaces, generics, narrowing | Catches whole classes of bug (a dollar amount passed as a string) and is what Melbourne job ads ask for. JavaScript would be faster today and worse in every other way. |
+| Framework | **Next.js (App Router)** | React, routing, server vs client components, data fetching | One codebase gives UI, server logic and an API. A separate Express API would teach the same concepts with twice the wiring and half the polish. |
+| UI | **React 19** | Components, state, props, hooks, forms | The default front-end skill in job ads. |
+| Styling | **Tailwind CSS + shadcn/ui** | Utility classes, accessible components, design tokens | Fast, consistent, and shadcn gives accessible primitives rather than hand-rolled modals. |
+| Database | **PostgreSQL** | Relational modelling, SQL, indexes, aggregates, transactions | Relational data is the whole app. A document store would hide the modelling lessons and make budget aggregates harder. |
+| ORM | **Prisma** | Schema-as-code, migrations, relations, typed queries | The migration workflow is explicit and readable, which is what a learner needs. Drizzle is leaner but assumes more SQL fluency. |
+| Auth | **Auth.js** with Google | OAuth, sessions, middleware, callbacks | Google sign-in means no password handling, no reset flows, no hashing mistakes. |
+| Validation | **Zod** | Schema validation, inference, parsing untrusted input | One schema validates the form and the server. |
+| Tests | **Vitest** + **Playwright (light)** | Unit tests for logic, one or two end-to-end flows | Full coverage is not the goal; money and dates are. |
+| Hosting | **Vercel** (app) + **Neon** (Postgres) | Deployments, preview builds, environment variables, CI | Free tier covers a two-person app; preview deploys per branch are a real professional workflow. |
+| Package manager | **pnpm** | Lockfiles, workspaces | Faster, stricter than npm. |
+
+Deployment reality check: Vercel + Neon free tiers comfortably handle two users.
+The only real cost is a domain name (~$15/year) and optionally a few cents of AI
+usage.
+
+## 2. System shape
+
+```mermaid
+flowchart LR
+  subgraph Devices
+    P["Phone<br/>(PWA)"]
+    D["Desktop<br/>browser"]
+  end
+
+  V["Next.js app<br/>Vercel"]
+
+  subgraph Managed
+    DB[("PostgreSQL<br/>Neon")]
+    AUTH["Auth.js<br/>Google OAuth"]
+    DRIVE["Google Drive API"]
+    AI["AI provider<br/>vision + transcription"]
+  end
+
+  P --> V
+  D --> V
+  V --> DB
+  V --> AUTH
+  V --> DRIVE
+  V --> AI
+```
+
+There is no separate backend service. Server components and server actions run
+on the server inside the same Next.js deployment. That is a deliberate
+simplification: fewer moving parts to learn, and the same concepts.
+
+## 3. Data model
+
+### Entity relationships (Phase 1)
+
+```mermaid
+erDiagram
+  HOUSEHOLD ||--o{ USER : "has members"
+  HOUSEHOLD ||--o{ ACCOUNT : owns
+  HOUSEHOLD ||--o{ CATEGORY : defines
+  HOUSEHOLD ||--o{ BUDGET_MONTH : plans
+  HOUSEHOLD ||--o{ BILL : schedules
+  HOUSEHOLD ||--o{ TRANSACTION : contains
+  ACCOUNT ||--o{ TRANSACTION : records
+  CATEGORY ||--o{ TRANSACTION : classifies
+  BUDGET_MONTH ||--o{ BUDGET_LINE : contains
+  CATEGORY ||--o{ BUDGET_LINE : allocates
+  CATEGORY ||--o{ BILL : classifies
+  ACCOUNT ||--o{ BILL : "paid from"
+  BILL ||--o{ TRANSACTION : generates
+  USER ||--o{ TRANSACTION : "created by"
+  USER ||--o{ IMPORT_BATCH : runs
+  IMPORT_BATCH ||--o{ TRANSACTION : produces
+  USER ||--o{ AI_USAGE : consumes
+```
+
+### Tables
+
+**Household** — `id`, `name`, `createdAt`. Exactly one row in v1; the model exists
+so nothing is hard-coded to "the household".
+
+**User** — `id`, `householdId`, `email` (unique), `name`, `image`, `role`
+(`member` | `demo`), `createdAt`. `role: demo` is read-only and seeded.
+
+**Account** — `id`, `householdId`, `name`, `type` (`transaction` | `savings` |
+`cash` | `credit`), `openingBalanceCents`, `currency` (default `AUD`), `colour`,
+`archivedAt`, `sortOrder`.
+
+**Category** — `id`, `householdId`, `name`, `kind` (`income` | `expense`),
+`parentId` (one level only), `icon`, `colour`, `archivedAt`, `sortOrder`.
+
+**Transaction** — `id`, `householdId`, `accountId`, `categoryId`, `amountCents`
+(**signed**: negative = money out), `occurredOn` (date), `description`,
+`merchant`, `note`, `status` (`needs_review` | `confirmed`), `source` (`manual` |
+`import` | `ai` | `bill`), `transferGroupId` (nullable, links the two sides of a
+transfer), `importBatchId`, `createdById`, `createdAt`, `updatedAt`.
+
+> Note: the model is `Transaction`; Prisma's interactive transactions are
+> `prisma.$transaction()`. Different things, similar names. Expect this once.
+
+**BudgetPeriod** *(proposed — the period model is under review, see the brief §10)*
+— `id`, `householdId`, `label`, `startsOn` (date), `endsOn` (date),
+`unique(householdId, startsOn)`, `notes`. Storing an explicit date range rather
+than a calendar month keeps the period length a configuration detail rather than a
+schema change.
+
+**BudgetLine** — `id`, `budgetPeriodId`, `categoryId`, `allocatedCents`.
+`unique(budgetPeriodId, categoryId)`.
+
+**Bill** — `id`, `householdId`, `name`, `amountCents` (positive), `frequency`
+(`weekly` | `fortnightly` | `monthly` | `quarterly` | `yearly`), `nextDueOn`
+(date), `categoryId`, `accountId`, `autoCreateTransaction` (bool), `archivedAt`.
+
+**ImportBatch** — `id`, `householdId`, `createdById`, `source` (`drive_sheet` |
+`csv`), `fileName`, `rowCount`, `importedCount`, `skippedCount`, `createdAt`.
+Transactions carry a `fingerprint` (unique per household) made from date, amount
+and normalised description, which is what makes imports idempotent.
+
+**AiUsage** — `id`, `householdId`, `userId`, `model`, `inputTokens`,
+`outputTokens`, `estimatedCostCents`, `feature`, `createdAt`. Written on every AI
+call so the cap in AI-4 is enforceable and auditable.
+
+Later phases add: `Event`, `Chore`, `ChoreCompletion`, `Recipe`, `Ingredient`,
+`MealPlanEntry`, `GroceryItem`, `WorkoutTemplate`, `WorkoutLog`.
+
+## 4. Conventions that prevent real bugs
+
+These are not style preferences. Each one prevents a bug class that would
+otherwise ship.
+
+1. **Money is integer cents, everywhere.** `$12.35` is `1235`. No floats, no
+   `Decimal` arithmetic in application code. Format only at the edge with
+   `Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' })`.
+   *Why:* `0.1 + 0.2 !== 0.3` in floating point, and a budget that drifts by a
+   cent per transaction is a budget nobody trusts.
+2. **Signed amounts.** Expenses negative, income positive, one `SUM` gives the
+   net. Display code uses the absolute value. Transfers are two rows joined by
+   `transferGroupId` and excluded from income/expense totals.
+3. **Dates vs timestamps.** A transaction date or bill due date is a calendar day:
+   store as `@db.Date`, compare as strings or date-only values, never convert
+   through UTC. An event or a session is a moment: `timestamptz`, stored in UTC,
+   rendered in `Australia/Melbourne`. Mixing these causes "yesterday's coffee
+   appears tomorrow" bugs.
+4. **Every query is household-scoped.** Reads and writes go through
+   `src/server/*` functions that take the session and derive `householdId`
+   themselves. Route handlers never accept a `householdId` from the client.
+5. **Validate at the boundary, trust inside.** A Zod schema parses every server
+   action input. After that, types are trusted.
+6. **Derived data is computed, not stored.** Budget actuals, account balances and
+   dashboard totals are SQL aggregates. Storing them means they will eventually
+   be wrong.
+7. **Stable IDs.** `cuid2` or `uuid`, generated by the database or the ORM, never
+   sequential integers exposed in URLs.
+8. **Soft delete for referenced rows.** Categories and accounts archive; only
+   transactions and imports actually delete (with an undo window).
+
+## 5. Authentication and access
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant A as Auth.js
+  participant G as Google
+  participant App as Next.js
+
+  U->>A: Sign in
+  A->>G: OAuth consent
+  G-->>A: id_token (email, sub, name)
+  A->>A: signIn callback: email in ALLOWED_EMAILS?
+  alt allowed
+    A->>App: Session (user id, household id)
+    App-->>U: Dashboard
+  else not allowed
+    A-->>U: Access denied
+  end
+```
+
+- **Provider:** Google only. No passwords stored, ever.
+- **Allowlist:** `ALLOWED_EMAILS` is a comma-separated environment variable.
+  Enforced in the `signIn` callback, server-side. The UI never decides access.
+- **Session:** JWT cookie, `httpOnly`, `secure`, `sameSite=lax`, 30-day rolling.
+- **Household:** resolved from the session on every request. No client-supplied
+  household identifiers are ever trusted.
+- **Demo mode:** a seeded `role: demo` user can read but not write; mutations
+  check the role server-side. This is what the public deployment shows.
+
+## 6. Folder structure
+
+```
+life-organiser/
+├─ docs/
+├─ prisma/
+│  ├─ schema.prisma
+│  ├─ migrations/
+│  └─ seed.ts                # fictional household
+├─ public/
+├─ src/
+│  ├─ app/
+│  │  ├─ (auth)/login/page.tsx
+│  │  ├─ (app)/
+│  │  │  ├─ layout.tsx        # shell: sidebar + mobile tabs
+│  │  │  ├─ dashboard/page.tsx
+│  │  │  ├─ transactions/
+│  │  │  │  ├─ page.tsx
+│  │  │  │  └─ [id]/page.tsx
+│  │  │  ├─ budgets/page.tsx
+│  │  │  ├─ bills/page.tsx
+│  │  │  ├─ reports/page.tsx
+│  │  │  └─ settings/page.tsx
+│  │  ├─ api/
+│  │  │  ├─ auth/[...nextauth]/route.ts
+│  │  │  ├─ import/drive/route.ts
+│  │  │  └─ ai/capture/route.ts
+│  │  ├─ layout.tsx
+│  │  └─ globals.css
+│  ├─ actions/                # server actions, one file per area
+│  │  ├─ transactions.ts
+│  │  └─ budgets.ts
+│  ├─ components/
+│  │  ├─ ui/                  # shadcn primitives
+│  │  └─ transactions/        # feature components
+│  ├─ lib/
+│  │  ├─ db.ts                # Prisma client singleton
+│  │  ├─ auth.ts              # Auth.js config
+│  │  ├─ money.ts             # cents <-> display
+│  │  ├─ dates.ts             # month bounds, AU timezone helpers
+│  │  └─ validation/          # Zod schemas
+│  ├─ server/                 # data access + business logic
+│  │  ├─ transactions.ts
+│  │  ├─ budgets.ts
+│  │  ├─ bills.ts
+│  │  ├─ drive.ts
+│  │  └─ ai.ts
+│  └─ types/
+├─ tests/
+├─ .env.example
+├─ AGENTS.md
+└─ README.md
+```
+
+Rule of thumb: **`app/` decides what to show, `server/` decides what is true.**
+
+## 7. Request flow, end to end
+
+Adding a transaction, as an example of the pattern every feature follows:
+
+```mermaid
+sequenceDiagram
+  participant C as Client form
+  participant A as Server action
+  participant V as Zod schema
+  participant S as src/server/transactions
+  participant D as Prisma
+  participant DB as Postgres
+
+  C->>A: { amount, categoryId, accountId, occurredOn }
+  A->>V: parse()
+  alt invalid
+    V-->>C: field errors
+  else valid
+    A->>S: createTransaction(session, input)
+    S->>S: resolve householdId from session
+    S->>D: insert scoped row
+    D->>DB: INSERT
+    DB-->>D: row
+    S-->>A: transaction
+    A->>A: revalidatePath('/transactions')
+    A-->>C: success + updated list
+  end
+```
+
+## 8. Integrations
+
+### 8.1 Google Drive import
+
+- **Scope:** `https://www.googleapis.com/auth/drive.file` — the app can only see
+  files the user explicitly picks through the Google Picker. Not
+  `drive.readonly`. This is both better privacy and a much easier consent screen
+  to defend in an interview.
+- **Flow:** user opens Picker → selects a spreadsheet → app stores the file id
+  and an encrypted refresh token → fetches the sheet as CSV → maps columns →
+  previews → imports.
+- **Sheets:** export via
+  `GET https://www.googleapis.com/drive/v3/files/{id}/export?mimeType=text/csv`
+  for single-sheet files. Multi-tab sheets need the Sheets API
+  (`values.get`) instead — decide at milestone 9 when the real file is known.
+- **Refresh tokens are stored encrypted** (AES-256-GCM with `ENCRYPTION_KEY`) and
+  never logged.
+- **Known gotcha:** while the Google Cloud project is in "testing" publishing
+  status, refresh tokens expire after 7 days. Options: publish the app (needs a
+  privacy policy URL — the repo README can serve), or accept weekly
+  re-authorisation. Test at milestone 9 and record the outcome here.
+- **Idempotency:** a `fingerprint` unique index per household
+  (`sha256(date|amountCents|normalisedDescription)`) makes a repeated import a
+  no-op instead of a duplicate.
+
+### 8.2 AI capture
+
+Deliberately provider-agnostic. A thin interface (`src/server/ai.ts`) exposes:
+
+```ts
+type CaptureInput =
+  | { kind: 'text'; text: string }
+  | { kind: 'image'; bytes: Uint8Array; mimeType: string }
+  | { kind: 'audio'; bytes: Uint8Array; mimeType: string };
+
+type CaptureResult = {
+  amountCents: number | null;
+  merchant: string | null;
+  occurredOn: string | null;
+  suggestedCategoryId: string | null;
+  confidence: 'low' | 'medium' | 'high';
+};
+```
+
+- Structured output is enforced with a JSON schema, then parsed with Zod. Never
+  parse prose with regex.
+- Audio is transcribed first (`gpt-4o-mini-transcribe` or Gemini transcribe),
+  then the transcript goes through the same text path.
+- **Cost control:** estimate cost after each call, write to `AiUsage`, and refuse
+  the request when the month's total exceeds `AI_MONTHLY_BUDGET_CENTS`.
+
+**Cost model at current published rates (USD)**
+
+| Operation | Model tier | Unit cost | Per capture |
+|---|---|---|---|
+| Text → fields | small model, $0.25/1M in, $2.00/1M out | ~250 in, ~150 out tokens | ~$0.0004 |
+| Photo → fields | same, ~1.5k image tokens | ~1.7k in, ~150 out | ~$0.0007 |
+| Voice 20s | transcription $0.003/min | 0.33 min + extraction | ~$0.0015 |
+
+Realistic usage of 8 captures/day for two people is ~240/month → **~$0.25 USD,
+under $1 AUD including retries.** A $5 AUD monthly cap is generous and still
+trivial.
+
+## 9. Security and privacy
+
+- Secrets live in Vercel environment variables and `.env.local`. `.env.example`
+  documents names only.
+- All mutations are server actions or route handlers; the client never talks to
+  the database directly.
+- Rate limit the AI and import endpoints per user (in-memory is fine for two
+  users; note the limitation).
+- Prisma parameterises queries; no raw SQL string interpolation.
+- Cookies are `httpOnly`; no tokens in `localStorage`.
+- CSP and `Referrer-Policy` headers set in `next.config.ts`.
+- No third-party analytics on authenticated routes.
+- Every response that could leak another household's data is covered by a test.
+
+## 10. Testing strategy
+
+| Level | Tool | What is tested |
+|---|---|---|
+| Unit | Vitest | Money parsing/formatting, month boundaries, fingerprinting, budget maths, Zod schemas |
+| Component | Vitest + Testing Library | Transaction form validation, budget bar states |
+| End-to-end | Playwright | Sign in → add transaction → appears on dashboard → budget updates |
+| Manual | A phone and a desktop | Every milestone ends with both |
+
+Target: the logic that would quietly produce wrong money is tested. Not 100%
+coverage.
+
+## 11. Environments
+
+| Environment | App | Database | Data |
+|---|---|---|---|
+| Local | `pnpm dev` | Docker Postgres or a Neon dev branch | Seeded demo household |
+| Preview | Vercel preview per branch | Neon branch (optional) | Seeded demo household |
+| Production | Vercel | Neon production | Real household, writes enabled |
+
+Migrations: `prisma migrate dev` locally, `prisma migrate deploy` in CI before
+production promotion. Never edit a migration that has been applied.
+
+## 12. Decision log
+
+| Date | Decision | Why | Alternatives rejected |
+|---|---|---|---|
+| 2026-11-15 | Single Next.js app, no separate API | Fewer moving parts while learning; same concepts | Express + React SPA; tRPC monorepo |
+| 2026-11-15 | TypeScript strict | Type safety is the point of choosing TS | Plain JavaScript |
+| 2026-11-15 | PostgreSQL + Prisma | Relational data, readable migrations | SQLite; MongoDB; Drizzle |
+| 2026-11-15 | Money as signed integer cents | Removes float rounding bugs | `Float`; `Decimal` in app code |
+| 2026-11-15 | Google sign-in, two-email allowlist | No password handling; closed by default | Email magic links; passwords |
+| 2026-11-15 | Finances built first | User priority; hardest data modelling, best learning | Meals + groceries vertical slice |
+| 2026-11-15 | Drive via Picker + `drive.file` scope | Least privilege, simplest consent | `drive.readonly` |
+| 2026-11-15 | AI capture deferred to Phase 4 | Data model must settle first; not on the critical path | Build AI first |
+| 2026-11-15 | App name: Life Organiser | Chosen by owner | Hearth, Kin, Nest |
+
+## 13. Open technical questions
+
+1. Docker for local Postgres, or a Neon dev branch from day one? (Neon is less to
+   install; Docker teaches the local-dev workflow employers use.)
+2. Does the bank export a single CSV or one per account? Affects the import
+   mapping UI.
+3. Google Picker needs a Cloud project with an API key and project number — set
+   up before milestone 9.
+4. Push notifications: Web Push via service worker, or email only? Deferred, but
+   the PWA decision affects it.
+5. Realtime between two devices (grocery list, Phase 3): polling, Supabase
+   Realtime, or server-sent events? Decide when that phase starts.
