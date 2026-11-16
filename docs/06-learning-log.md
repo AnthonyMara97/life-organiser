@@ -113,10 +113,12 @@ because of the identity written inside the commit, not the key — GitHub protec
 private email by refusing the push (GH007).
 
 **Still fuzzy:** how the month total plus `Math.floor` keeps backward month moves
-correct, and how `@db.Date` behaves in a Prisma query in practice. Needs a
-read-through of `addMonthsClamped` together before it counts as understood.
+correct, and how `@db.Date` behaves in a Prisma query in practice. This is the
+first thing to review next session — `addMonthsClamped` is to be read back in his
+own words before any new work.
 
-**Next:** unlock the SSH key and push, then Vercel, Neon and Prisma.
+**Next:** read `addMonthsClamped` back, then decide local Postgres (Docker vs Neon)
+and start Prisma with `User` + `Household`.
 
 ---
 

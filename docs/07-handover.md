@@ -6,8 +6,31 @@
 > it at the close of each session.
 >
 > **Last updated:** 16 November 2026, end of session 3.
-> **Next session starts at:** "Next actions" below. The working tree is clean and
-> everything is pushed to `origin/main`.
+> **Next session starts at:** §0 — the first five minutes. Everything in the repo
+> is committed and pushed; confirm with `git status -sb`.
+
+---
+
+## 0. Start here — the first five minutes
+
+**Do this before anything else: before asking what to work on, before reading code
+together, before planning.** Anthony asked to be prompted at the start of this
+session. This is a standing request, not a suggestion.
+
+1. Ask him to open `src/lib/dates.ts` and read `addMonthsClamped` — the last
+   function in the file — either aloud or in his own words.
+2. Ask him two questions about it:
+   - *Why is the month total counted from year zero?*
+   - *Why is the day clamped to the end of the month instead of carrying over?*
+3. Work it through with concrete examples if the answer is shaky:
+   `addMonthsClamped("2026-01-31", 1)` → `"2026-02-28"` (not 3 March), and
+   `addMonthsClamped("2026-03-31", -1)` → `"2026-02-28"` (not 2 March).
+4. Do not move on until he can explain it. The working agreement says a piece is
+   not done until it can be explained back; that is the whole reason the project
+   exists. If it takes ten minutes, take ten minutes.
+
+Only after that does the session start properly (frame → plan → build → verify →
+commit).
 
 ---
 
@@ -18,19 +41,21 @@
 | Planning documents | ✅ Written, reviewed, committed |
 | Machine setup | ✅ WSL Ubuntu + nvm + Node 26 + pnpm |
 | Next.js scaffold | ✅ Builds, typechecks, lints |
-| Config decisions (A/B) | ✅ Applied and committed (`7af1e1e`, `f4302bb`) |
-| Scope decision (C) | ✅ Drive replaced by CSV upload, docs updated (`553a429`) |
-| First real code | ✅ `src/lib/dates.ts` + Vitest, 15 tests (`5645fa0`, `18ca292`) |
+| Config decisions (A/B) | ✅ Applied and committed |
+| Scope decision (C) | ✅ Drive replaced by CSV upload, docs updated |
+| First real code | ✅ `src/lib/dates.ts` + Vitest, 15 tests |
 | GitHub remote | ✅ Created, public: `github.com/AnthonyMara97/life-organiser` |
-| Anything pushed | ✅ `main` pushed and tracking `origin/main` at `ba47563` |
+| Anything pushed | ✅ Clean and level with `origin/main` — confirm with `git status -sb` |
 | Deployment | ❌ Not started |
 | Database | ❌ Not started |
 | Auth | ❌ Not started |
 | App UI | ❌ Still "Hello world!" |
 
-Commit history, oldest last. Hashes changed when the author email was rewritten:
+Commit history, oldest last. Hashes changed when the author email was rewritten;
+trust the subjects if a hash ever looks wrong, and `git log -1` for the tip.
 
 ```
+d4e58b7 docs: record the first push and the email privacy fix
 ba47563 docs: record session 3 decisions and close the handover
 6d970ca feat(dates): add calendar-day helpers with tests
 0266bc5 chore(test): add Vitest and test scripts
@@ -44,7 +69,8 @@ bedbf8e docs: add initial project documentation
 
 **Verified at close of session:** `pnpm test` (15 passing), `pnpm typecheck`,
 `pnpm lint` and `pnpm build` all pass. Working tree clean. Local `HEAD` and
-`origin/main` are the same commit (`ba475632b3ec408ab768373aff3d785cc33909b8`).
+`origin/main` matched at `d4e58b7` and the remote page showed 10 commits. Confirm
+with `git status -sb`: it must not say ahead or behind.
 
 ---
 
@@ -140,9 +166,8 @@ savings-goal-as-P0. `BudgetPeriod` in `docs/03-architecture.md` is still marked
 
 ## 5. Next actions, in order
 
-1. **Read `src/lib/dates.ts` together and explain it back.** `addMonthsClamped`
-   is the piece to explain — why the month total is computed from year zero, and
-   why the day is clamped. Definition of done includes "Anthony can explain it".
+1. **§0 first — the `addMonthsClamped` read-back.** It is a gate, not an optional
+   warm-up. Do not start new work until Anthony has explained it.
 
 2. **Decide the local database question** (open decision 2), then Week 1
    infrastructure: Prisma with `User` + `Household`, first migration, Auth.js with
@@ -150,6 +175,38 @@ savings-goal-as-P0. `BudgetPeriod` in `docs/03-architecture.md` is still marked
 
 3. **When the budget period model is settled**, write the period functions with
    tests. Not before.
+
+### Shared context, in brief
+
+`AGENTS.md` is authoritative; this is the digest a fresh agent needs so it does not
+contradict the last three sessions.
+
+- **The product:** a private household app for exactly two people, built partly as
+  a learning vehicle and portfolio piece. Finances come first. The repository is
+  public; no real household data, balances, addresses or names may enter it.
+- **Agreed and not to be relitigated without Anthony:** Next.js + TypeScript +
+  Tailwind; PostgreSQL + Prisma; Auth.js with Google and a two-email allowlist;
+  money as integer cents; calendar days as ISO strings; CSV upload instead of
+  Google Drive; AI capture in Phase 4; component caching off.
+- **Still proposed, not agreed:** the two-tier ledger (`needs_review` vs
+  `confirmed`) and savings-goal-as-P0. `BudgetPeriod` stays marked `(proposed)`.
+- **He decides, you propose.** For anything that is not execution detail, give one
+  sentence of decision, two or three real options, a recommendation with what
+  could go wrong, and the cost to reverse — then stop. Never "I went ahead and".
+- **Execution detail proceeds:** names, file placement, formatting. Mention it in
+  the summary.
+- **No dependency without a one-sentence justification and his agreement.**
+- **British spelling in prose and UI** ("organise", "colour"); US spelling in code
+  identifiers to match libraries.
+- **Commits:** one logical change, Conventional Commits, body explains **why**.
+  Push at the end of every session.
+- **Definition of done:** mobile and desktop, server-side validation,
+  household-scoped queries, loading/empty/error states, `pnpm typecheck`,
+  `pnpm lint`, `pnpm test`, docs updated, and Anthony can explain the change.
+- **Where the fuller memory lives:** `docs/05-working-agreement.md` (how we work),
+  `docs/03-architecture.md` §12 (every technical decision and what was rejected),
+  `docs/06-learning-log.md` (what he has actually learned), `docs/02-features.md`
+  §8 (parked scope, including FIN-11 Drive).
 
 ### The teaching method agreed with him
 
