@@ -6,8 +6,8 @@
 > it at the close of each session.
 >
 > **Last updated:** 16 November 2026, end of session 3.
-> **Next session starts at:** "Next actions" below. The working tree is clean, but
-> **nothing is pushed yet** — that is the first task.
+> **Next session starts at:** "Next actions" below. The working tree is clean and
+> everything is pushed to `origin/main`.
 
 ---
 
@@ -22,27 +22,29 @@
 | Scope decision (C) | ✅ Drive replaced by CSV upload, docs updated (`553a429`) |
 | First real code | ✅ `src/lib/dates.ts` + Vitest, 15 tests (`5645fa0`, `18ca292`) |
 | GitHub remote | ✅ Created, public: `github.com/AnthonyMara97/life-organiser` |
-| Anything pushed | ❌ **No commits are on GitHub yet** — the push is blocked on the key passphrase |
+| Anything pushed | ✅ `main` pushed and tracking `origin/main` at `ba47563` |
 | Deployment | ❌ Not started |
 | Database | ❌ Not started |
 | Auth | ❌ Not started |
 | App UI | ❌ Still "Hello world!" |
 
-Commit history, oldest last:
+Commit history, oldest last. Hashes changed when the author email was rewritten:
 
 ```
-18ca292 feat(dates): add calendar-day helpers with tests
-5645fa0 chore(test): add Vitest and test scripts
-553a429 docs(scope): replace Google Drive import with in-app CSV upload
-f4302bb chore(next): disable component caching while learning
-7af1e1e chore(deps): bump @types/node to match the Node 26 runtime
-0349f40 docs: add session handover and record today's setup work
-96a811f chore: scaffold Next.js application
-65e73b5 docs: add initial project documentation
+ba47563 docs: record session 3 decisions and close the handover
+6d970ca feat(dates): add calendar-day helpers with tests
+0266bc5 chore(test): add Vitest and test scripts
+c374304 docs(scope): replace Google Drive import with in-app CSV upload
+c755208 chore(next): disable component caching while learning
+0b5c904 chore(deps): bump @types/node to match the Node 26 runtime
+6f90e98 docs: add session handover and record today's setup work
+5642bbe chore: scaffold Next.js application
+bedbf8e docs: add initial project documentation
 ```
 
 **Verified at close of session:** `pnpm test` (15 passing), `pnpm typecheck`,
-`pnpm lint` and `pnpm build` all pass. Working tree clean.
+`pnpm lint` and `pnpm build` all pass. Working tree clean. Local `HEAD` and
+`origin/main` are the same commit (`ba475632b3ec408ab768373aff3d785cc33909b8`).
 
 ---
 
@@ -59,7 +61,7 @@ Everything lives inside Ubuntu, not Windows.
 | npm | 11.20.0 (ships with Node) |
 | pnpm | 12.21.0, installed globally via npm |
 | nvm | v0.41.0 |
-| git | 2.55.0, identity `AnthonyMara97 <amarafio2@gmail.com>` |
+| git | 2.55.0. Global identity `AnthonyMara97 <amarafio2@gmail.com>`; this repo overrides the email to the GitHub no-reply address |
 | GitHub CLI | ❌ Not installed (no `gh` in WSL or Windows) |
 | SSH key | `~/.ssh/id_ed25519`, **passphrase-protected**, registered on GitHub as "WSL Ubuntu - Anthony (ed25519)" |
 | Remote | `git@github.com:AnthonyMara97/life-organiser.git` (public) |
@@ -77,18 +79,22 @@ Windows has no Node, pnpm or git. Do not run project commands from PowerShell.
    short `.sh` file into `/tmp` and run `wsl -d Ubuntu -- bash /tmp/script.sh`.
 3. **Non-interactive SSH cannot use the passphrase-protected key.** GitHub accepts
    the key (fingerprint matches), but signing fails without a passphrase prompt.
-   An agent was started at a fixed socket: `/tmp/ssh-agent.sock`. To unlock the key
-   for the session, Anthony runs, in his own WSL terminal:
+   An agent runs at a fixed socket: `/tmp/ssh-agent.sock`, unlocked once with:
 
    ```bash
    SSH_AUTH_SOCK=/tmp/ssh-agent.sock ssh-add ~/.ssh/id_ed25519
    ```
 
-   Then commands from this session can use the same socket. The agent dies with
-   the WSL instance; start a new one with `ssh-agent -a /tmp/ssh-agent.sock`.
+   The agent dies with the WSL instance. After a restart, start a new one with
+   `ssh-agent -a /tmp/ssh-agent.sock`, add the key again, and prefix SSH commands
+   with `SSH_AUTH_SOCK=/tmp/ssh-agent.sock`.
 4. **`pnpm build` writes to stderr on success**, so PowerShell may show a red
    "NativeCommandError" banner even when the build passed. Read the exit code, not
    the colour.
+5. **GitHub rejects pushes that expose a private email (GH007).** The repo-local
+   `user.email` is now the GitHub no-reply address. A commit made with the global
+   Gmail identity will be rejected on push; check `git log -1 --format=%ae` before
+   suspecting the key. Never "fix" this by making the Gmail public.
 
 ### How Anthony opens the project
 
@@ -109,6 +115,7 @@ Do not tell him to paste error messages into the terminal.
 | C. Google Drive import | **Dropped from v1.** FIN-8 becomes in-app CSV upload; file parsed in memory and discarded. Drive parked as FIN-11 (Phase 2, P2) | Week 9 is tractable and testable; OAuth returns with calendar integration |
 | Calendar-day representation | **ISO strings** (`"2026-11-16"`), arithmetic via `src/lib/dates.ts` | A day never becomes an instant; month-boundary and DST bugs cannot occur by construction |
 | Test runner | Vitest added | Justification: the runner the architecture already names, needed for date and money logic |
+| Git author email | Repository now commits as the GitHub no-reply address | Keeps the real Gmail out of a public repo; GitHub refuses pushes that expose a private email (GH007). Earlier commits were rewritten before the first push |
 
 Recorded in `docs/03-architecture.md` §12 and `docs/01-product-brief.md` §10.
 
@@ -133,22 +140,15 @@ savings-goal-as-P0. `BudgetPeriod` in `docs/03-architecture.md` is still marked
 
 ## 5. Next actions, in order
 
-1. **Unlock the SSH key and push.** The repo and commits exist only on this
-   laptop. Run the `ssh-add` command in §2, then:
-
-   ```bash
-   cd ~/repos/life-organiser && git push -u origin main
-   ```
-
-2. **Read `src/lib/dates.ts` together and explain it back.** `addMonthsClamped`
+1. **Read `src/lib/dates.ts` together and explain it back.** `addMonthsClamped`
    is the piece to explain — why the month total is computed from year zero, and
    why the day is clamped. Definition of done includes "Anthony can explain it".
 
-3. **Decide the local database question** (open decision 2), then Week 1
+2. **Decide the local database question** (open decision 2), then Week 1
    infrastructure: Prisma with `User` + `Household`, first migration, Auth.js with
    the two-email allowlist, app shell, Vercel deploy.
 
-4. **When the budget period model is settled**, write the period functions with
+3. **When the budget period model is settled**, write the period functions with
    tests. Not before.
 
 ### The teaching method agreed with him

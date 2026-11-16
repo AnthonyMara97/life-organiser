@@ -108,7 +108,9 @@ and the first real code: `src/lib/dates.ts` with 15 tests.
 it stays a string and arithmetic counts whole days; the moment it becomes a
 `Date`, timezones and daylight saving start moving it around. Also: a test is a
 claim written down. Writing the 31 January case before trusting the code is why
-the bill rule is now obvious rather than surprising.
+the bill rule is now obvious rather than surprising. And a push can be rejected
+because of the identity written inside the commit, not the key — GitHub protects a
+private email by refusing the push (GH007).
 
 **Still fuzzy:** how the month total plus `Math.floor` keeps backward month moves
 correct, and how `@db.Date` behaves in a Prisma query in practice. Needs a
