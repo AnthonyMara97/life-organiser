@@ -6,7 +6,9 @@ calendar and an exercise schedule in one place.
 Built in public as a portfolio project and used daily by two people. The public
 repository contains **no real household data** — only seed data for demos.
 
-**Status:** planning. No application code yet (as of 15 Nov 2026).
+**Status:** Week 1 in progress. The scaffold builds, the date helpers are tested,
+and the docs match the plan. Authentication and the database are next (as of
+16 Nov 2026).
 
 ---
 

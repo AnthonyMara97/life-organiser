@@ -55,7 +55,7 @@ scratch` requires having done it in this project, unaided.
 | Idempotency | Importing the same CSV twice | to learn |
 | Soft delete | Archiving categories | to learn |
 | Integer cents vs floating point | `0.1 + 0.2 !== 0.3` | to learn |
-| Dates vs timestamps, and timezones | `Australia/Melbourne` month boundaries | to learn |
+| Dates vs timestamps, and timezones | `Australia/Melbourne` month boundaries | learning |
 | Recurrence maths | Bill due on the 31st, in February | to learn |
 
 ### Platform and infrastructure
@@ -74,7 +74,7 @@ scratch` requires having done it in this project, unaided.
 | Concept | Why it came up | Status |
 |---|---|---|
 | Small commits and why | Every session | learning |
-| Tests that protect money and dates | Week 11 | to learn |
+| Tests that protect money and dates | Week 11 | learning |
 | Reading an error message before changing code | Every bug | learning |
 | Technical writing | README as portfolio | to learn |
 | Explaining a trade-off | Every review | to learn |
@@ -95,6 +95,26 @@ Newest first. One entry per session where something was genuinely learned.
 **Still fuzzy:** what I could not explain yet.
 **Next:** the first thing to do next session.
 ```
+
+---
+
+### 2026-11-16 — First tests, and a scope cut
+
+**Built:** a public GitHub remote for the project, Node types and caching aligned
+with the runtime, Google Drive replaced by in-app CSV upload throughout the docs,
+and the first real code: `src/lib/dates.ts` with 15 tests.
+
+**Learned:** a calendar day is not a moment in time. "2026-11-16" has no clock, so
+it stays a string and arithmetic counts whole days; the moment it becomes a
+`Date`, timezones and daylight saving start moving it around. Also: a test is a
+claim written down. Writing the 31 January case before trusting the code is why
+the bill rule is now obvious rather than surprising.
+
+**Still fuzzy:** how the month total plus `Math.floor` keeps backward month moves
+correct, and how `@db.Date` behaves in a Prisma query in practice. Needs a
+read-through of `addMonthsClamped` together before it counts as understood.
+
+**Next:** unlock the SSH key and push, then Vercel, Neon and Prisma.
 
 ---
 

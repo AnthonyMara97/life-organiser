@@ -141,10 +141,12 @@ otherwise ship.
    net. Display code uses the absolute value. Transfers are two rows joined by
    `transferGroupId` and excluded from income/expense totals.
 3. **Dates vs timestamps.** A transaction date or bill due date is a calendar day:
-   store as `@db.Date`, compare as strings or date-only values, never convert
-   through UTC. An event or a session is a moment: `timestamptz`, stored in UTC,
-   rendered in `Australia/Melbourne`. Mixing these causes "yesterday's coffee
-   appears tomorrow" bugs.
+   store as `@db.Date`, and cross the app boundary as an ISO string
+   (`"2026-11-16"`). All calendar arithmetic goes through `src/lib/dates.ts`, which
+   works on whole days and never turns one into an instant. An event or a session
+   is a moment: `timestamptz`, stored in UTC, rendered in
+   `Australia/Melbourne`. Mixing these causes "yesterday's coffee appears
+   tomorrow" bugs.
 4. **Every query is household-scoped.** Reads and writes go through
    `src/server/*` functions that take the session and derive `householdId`
    themselves. Route handlers never accept a `householdId` from the client.
@@ -389,6 +391,7 @@ production promotion. Never edit a migration that has been applied.
 | 2026-11-16 | **Reversed:** CSV upload replaces Drive in v1 | Same outcome without OAuth, token storage or refresh-token expiry; keeps the riskiest week tractable | Keep Drive; store uploads in blob storage |
 | 2026-11-16 | Component caching off (`cacheComponents`, `partialPrefetching`) | Fresh data while learning; stale data mimics a bug | Leave defaults on; learn caching deliberately later |
 | 2026-11-16 | `@types/node` tracks the runtime (^26) | The compiler should describe the machine it runs on | Leave at ^20 |
+| 2026-11-16 | Calendar days are ISO strings, arithmetic in `src/lib/dates.ts` | A day has no time or timezone; strings make the month-boundary bug impossible and tests readable | `Date` at UTC midnight; a wrapper class |
 
 ## 13. Open technical questions
 
