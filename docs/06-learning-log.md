@@ -62,10 +62,10 @@ scratch` requires having done it in this project, unaided.
 | Concept | Why it came up | Status |
 |---|---|---|
 | Environment variables and secrets | Keys, database URLs | to learn |
-| OAuth 2.0, access vs refresh tokens, scopes | Google Drive | to learn |
-| Least-privilege access | `drive.file` instead of `drive.readonly` | to learn |
+| OAuth 2.0, access vs refresh tokens, scopes | Google sign-in; Drive deferred to FIN-11 | to learn |
+| Least-privilege access | Requesting only the scopes a feature needs | to learn |
 | Session cookies and `httpOnly` | Auth.js sessions | to learn |
-| Encryption at rest for tokens | Storing Drive refresh tokens | to learn |
+| Encryption at rest for tokens | Not needed in v1; revisit if Phase 2 stores tokens | to learn |
 | Deployments, previews, CI | Vercel | to learn |
 | PWA and service workers | Installing on phones | to learn |
 | Structured LLM output and cost control | AI capture | to learn |

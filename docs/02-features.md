@@ -1,6 +1,6 @@
 # 02 — Feature Specification
 
-> Status: draft for review · Last updated: 15 Nov 2026
+> Status: draft for review · Last updated: 16 Nov 2026
 >
 > **Phase 1 is finances.** Everything else is specified now, but deliberately
 > built later. New ideas go in §9, never straight into a milestone.
@@ -112,26 +112,32 @@ One screen that answers "where are we this month?".
 - Top merchants.
 - Read-only; no exports from here (export is FIN-10).
 
-### FIN-8 Google Drive import — P0
+### FIN-8 CSV import — P0
 
-Read a spreadsheet the user chooses, turn rows into transactions, never import
-the same row twice.
+Upload a bank CSV from the device, turn rows into transactions, never import the
+same row twice.
 
-- Connect Drive via OAuth using the **file picker** (`drive.file` scope) so the
-  user selects one file rather than granting drive-wide access.
-- Read the chosen sheet, or a CSV file in Drive.
+> **Decided 16 Nov 2026:** in-app upload replaces the Google Drive picker. v1 has
+> no OAuth integration beyond sign-in. Drive moves to the backlog as FIN-11.
+> The uploaded file is parsed in memory and discarded — only the resulting rows
+> and an import record are kept.
+
+- Upload a `.csv` via `<input type="file">` and a server action.
+- A CSV parser that handles quoted fields, embedded commas and CRLF line endings.
 - Column mapping UI: which column is date, amount, description.
 - Preview of the first 20 rows before committing.
 - Duplicate detection via a fingerprint (date + amount + normalised description).
 - Imported rows land as `needs_review`, not `confirmed`.
 - Import history with counts and an undo.
+- No file storage: Vercel has no durable disk, and keeping real bank exports is a
+  privacy cost with no benefit.
 
 **Acceptance criteria**
 
 - [ ] Running the same import twice creates zero duplicates.
 - [ ] A malformed row is reported by row number and skipped, not fatal.
-- [ ] Revoking access in Google does not break the rest of the app.
-- [ ] Tokens are stored encrypted and never logged.
+- [ ] A file over the size limit is rejected with a clear message.
+- [ ] No uploaded file content is written to disk, logs or the database.
 
 ### FIN-9 AI capture — P2 (Phase 4)
 
@@ -223,11 +229,14 @@ Kept here so they stop being re-suggested:
 - Recurring budget rollover and envelope carry-over.
 - Multi-currency.
 - Net worth and investment tracking.
-- Document storage; the app reads Drive, it does not become a file locker.
+- Document storage; uploads are parsed and discarded, never kept.
 - Shared accounts with anyone outside the household.
 
 ## 8. Backlog (parked, not scheduled)
 
+- FIN-11 **Google Drive import** (Phase 2, P2) — pick a spreadsheet through the
+  Google Picker instead of uploading a CSV. Parked 16 Nov 2026; the OAuth work is
+  deferred until calendar integration needs it anyway.
 - WhatsApp / SMS bot to capture entries.
 - Shopping list that reorders itself by supermarket aisle layout per store.
 - "Subscription audit" — detect and flag forgotten subscriptions.

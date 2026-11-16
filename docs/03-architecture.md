@@ -1,6 +1,6 @@
 # 03 — Architecture
 
-> Status: draft for review · Last updated: 15 Nov 2026
+> Status: draft for review · Last updated: 16 Nov 2026
 >
 > This document is the reference for **how** we build. Anything technical that is
 > decided belongs here, including what we rejected and why (§12).
@@ -39,7 +39,6 @@ flowchart LR
   subgraph Managed
     DB[("PostgreSQL<br/>Neon")]
     AUTH["Auth.js<br/>Google OAuth"]
-    DRIVE["Google Drive API"]
     AI["AI provider<br/>vision + transcription"]
   end
 
@@ -47,7 +46,6 @@ flowchart LR
   D --> V
   V --> DB
   V --> AUTH
-  V --> DRIVE
   V --> AI
 ```
 
@@ -117,8 +115,8 @@ schema change.
 (`weekly` | `fortnightly` | `monthly` | `quarterly` | `yearly`), `nextDueOn`
 (date), `categoryId`, `accountId`, `autoCreateTransaction` (bool), `archivedAt`.
 
-**ImportBatch** — `id`, `householdId`, `createdById`, `source` (`drive_sheet` |
-`csv`), `fileName`, `rowCount`, `importedCount`, `skippedCount`, `createdAt`.
+**ImportBatch** — `id`, `householdId`, `createdById`, `source` (`csv`),
+`fileName`, `rowCount`, `importedCount`, `skippedCount`, `createdAt`.
 Transactions carry a `fingerprint` (unique per household) made from date, amount
 and normalised description, which is what makes imports idempotent.
 
@@ -215,7 +213,7 @@ life-organiser/
 │  │  │  └─ settings/page.tsx
 │  │  ├─ api/
 │  │  │  ├─ auth/[...nextauth]/route.ts
-│  │  │  ├─ import/drive/route.ts
+│  │  │  ├─ import/csv/route.ts
 │  │  │  └─ ai/capture/route.ts
 │  │  ├─ layout.tsx
 │  │  └─ globals.css
@@ -235,7 +233,7 @@ life-organiser/
 │  │  ├─ transactions.ts
 │  │  ├─ budgets.ts
 │  │  ├─ bills.ts
-│  │  ├─ drive.ts
+│  │  ├─ import.ts
 │  │  └─ ai.ts
 │  └─ types/
 ├─ tests/
@@ -277,28 +275,28 @@ sequenceDiagram
 
 ## 8. Integrations
 
-### 8.1 Google Drive import
+### 8.1 CSV import
 
-- **Scope:** `https://www.googleapis.com/auth/drive.file` — the app can only see
-  files the user explicitly picks through the Google Picker. Not
-  `drive.readonly`. This is both better privacy and a much easier consent screen
-  to defend in an interview.
-- **Flow:** user opens Picker → selects a spreadsheet → app stores the file id
-  and an encrypted refresh token → fetches the sheet as CSV → maps columns →
-  previews → imports.
-- **Sheets:** export via
-  `GET https://www.googleapis.com/drive/v3/files/{id}/export?mimeType=text/csv`
-  for single-sheet files. Multi-tab sheets need the Sheets API
-  (`values.get`) instead — decide at milestone 9 when the real file is known.
-- **Refresh tokens are stored encrypted** (AES-256-GCM with `ENCRYPTION_KEY`) and
-  never logged.
-- **Known gotcha:** while the Google Cloud project is in "testing" publishing
-  status, refresh tokens expire after 7 days. Options: publish the app (needs a
-  privacy policy URL — the repo README can serve), or accept weekly
-  re-authorisation. Test at milestone 9 and record the outcome here.
+- **Flow:** user picks a `.csv` on their device → the browser sends it to a server
+  action → the server parses it → column mapping → preview → rows land as
+  `needs_review` → user confirms.
+- **Nothing is stored but the result.** The upload is held in memory for the
+  request and discarded. Only `Transaction` rows and an `ImportBatch` summary
+  survive. No blob storage, no token storage, no copy of a real bank export.
+- **Size limit and validation:** reject anything over ~5 MB or with an unexpected
+  content type before parsing. Parse defensively; every row is untrusted input.
+- **Parser:** hand-written for learning, and tested hard — quoted fields, embedded
+  commas and newlines, CRLF, a header row, and empty trailing rows are the cases
+  that break naive `split(',')`.
+- **Sheets:** a Google Sheets export is downloaded as CSV by the user; there is no
+  Sheets API call in v1.
 - **Idempotency:** a `fingerprint` unique index per household
   (`sha256(date|amountCents|normalisedDescription)`) makes a repeated import a
   no-op instead of a duplicate.
+
+> Google Drive (OAuth picker, encrypted refresh tokens, `drive.file` scope) is
+> parked as FIN-11 in `02-features.md` §8. The notes formerly here are kept in git
+> history and can be restored if that decision is reversed.
 
 ### 8.2 AI capture
 
@@ -388,6 +386,9 @@ production promotion. Never edit a migration that has been applied.
 | 2026-11-15 | Drive via Picker + `drive.file` scope | Least privilege, simplest consent | `drive.readonly` |
 | 2026-11-15 | AI capture deferred to Phase 4 | Data model must settle first; not on the critical path | Build AI first |
 | 2026-11-15 | App name: Life Organiser | Chosen by owner | Hearth, Kin, Nest |
+| 2026-11-16 | **Reversed:** CSV upload replaces Drive in v1 | Same outcome without OAuth, token storage or refresh-token expiry; keeps the riskiest week tractable | Keep Drive; store uploads in blob storage |
+| 2026-11-16 | Component caching off (`cacheComponents`, `partialPrefetching`) | Fresh data while learning; stale data mimics a bug | Leave defaults on; learn caching deliberately later |
+| 2026-11-16 | `@types/node` tracks the runtime (^26) | The compiler should describe the machine it runs on | Leave at ^20 |
 
 ## 13. Open technical questions
 
@@ -395,9 +396,7 @@ production promotion. Never edit a migration that has been applied.
    install; Docker teaches the local-dev workflow employers use.)
 2. Does the bank export a single CSV or one per account? Affects the import
    mapping UI.
-3. Google Picker needs a Cloud project with an API key and project number — set
-   up before milestone 9.
-4. Push notifications: Web Push via service worker, or email only? Deferred, but
+3. Push notifications: Web Push via service worker, or email only? Deferred, but
    the PWA decision affects it.
-5. Realtime between two devices (grocery list, Phase 3): polling, Supabase
+4. Realtime between two devices (grocery list, Phase 3): polling, Supabase
    Realtime, or server-sent events? Decide when that phase starts.

@@ -1,6 +1,6 @@
 # 04 — Roadmap
 
-> Status: draft for review · Last updated: 15 Nov 2026
+> Status: draft for review · Last updated: 16 Nov 2026
 >
 > **Confirmed: 8–10 focused hours per week**, in two sessions. If the real number
 > is lower, cut scope — do not cut the buffer.
@@ -20,7 +20,7 @@ Thirteen weeks, five milestones, one vertical slice per milestone:
 
 ```
 W1        W2–3        W4–5        W6–7      W8        W9        W10       W11       W12–13
-Foundations → Data+CRUD → Insight → Polish → Bills → Drive → AI → Hardening → Portfolio
+Foundations → Data+CRUD → Insight → Polish → Bills → Import → AI → Hardening → Portfolio
 ```
 
 Every week has the same six parts:
@@ -233,28 +233,30 @@ leap years.
 
 ---
 
-## Week 9 — Google Drive import
+## Week 9 — CSV import
 
-**Focus:** the first real integration.
+**Focus:** the first real integration — untrusted data from outside the app.
 
 **Build**
-- Google Cloud project, Picker, `drive.file` scope.
-- Encrypted token storage.
-- File selection → CSV fetch → column mapping → preview → import.
+- Upload form: `<input type="file">` accepting `.csv`, with size and type checks.
+- Hand-written CSV parser and fixtures: quoted fields, embedded commas and
+  newlines, CRLF, blank rows, a UTF-8 BOM.
+- Column mapping → preview the first 20 rows → commit.
 - Fingerprint-based duplicate detection.
-- Import history with counts.
+- Import history with counts, and a review queue for `needs_review` rows.
 
-**Learn:** OAuth 2.0 properly (access vs refresh tokens, scopes, consent) ·
-calling an external API server-side · transforming untrusted data · idempotency ·
-storing secrets encrypted.
+**Learn:** receiving a file upload server-side · parsing untrusted input
+defensively · idempotency · why the file is parsed in memory and discarded ·
+reporting a bad row by number instead of failing the whole import.
 
 **Your turn:** the fingerprint function and its tests.
 
-**Done when:** importing the same spreadsheet twice produces zero duplicates, and
-every imported row is in the review queue.
+**Done when:** importing the same CSV twice produces zero duplicates, and every
+imported row is in the review queue.
 
-**Watch out:** refresh-token expiry in "testing" publishing status. Decide
-publish-versus-reauthorise this week, and record it in the decision log.
+**Watch out:** CSV is deceptively loose. Encoding, quoting and line endings will
+each break a naive `split(',')`. Build the fixture set before the UI, and never
+treat the first clean file as proof the parser works.
 
 ---
 
@@ -315,7 +317,8 @@ minute, and could not write to it.
 **Build**
 - README: what, why, screenshots (demo data), stack, architecture diagram, how to
   run, what I would do next.
-- Three short write-ups: integer cents, idempotent imports, OAuth tokens.
+- Three short write-ups: integer cents, idempotent imports, parsing a CSV without
+  a library.
 - Repo tidy: no dead code, no commented-out experiments, consistent commits.
 - Deployed and monitored; both of you using it daily.
 
@@ -350,7 +353,7 @@ plan. If nothing slips, use it for the first Phase 2 feature.
 |---|---|---|
 | Hours fall short of 8–10/week | High | Buffer week 13; each week's "Build" list is ordered so the top two items alone constitute a usable increment |
 | Christmas and New Year disruption | Certain | Weeks 6 and 7 are deliberately light |
-| OAuth/Drive friction burns a week | Medium | Milestone 9 is late enough to absorb it; if it overruns, ship re-authorisation and move on |
+| CSV edge cases (encoding, quoting) burn a week | Medium | Build fixtures from a redacted real export and test the parser before the UI; milestone 9 is late enough to absorb a slip |
 | Scope creep (every new idea feels essential) | High | New ideas go to `02-features.md` §8, not the sprint |
 | Motivation dip mid-project | Medium | Weeks 4, 5 and 8 each deliver something visible and personally useful |
 | Real data breaks privacy discipline | Low, high impact | Seed data by default; `AGENTS.md` hard rule; screenshots from demo only |

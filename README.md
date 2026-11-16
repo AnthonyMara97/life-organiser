@@ -14,7 +14,7 @@ repository contains **no real household data** — only seed data for demos.
 
 | Area | Phase | What it covers |
 |---|---|---|
-| Finances | 1 (first) | Accounts, transactions, categories, monthly budgets, bills, reports, Google Drive import |
+| Finances | 1 (first) | Accounts, transactions, categories, monthly budgets, bills, reports, CSV import |
 | Calendar | 2 | Shared events, recurring appointments, who is where |
 | Chores | 2 | Recurring tasks, rotation between two people, what is due |
 | Meals | 3 | Recipes, weekly meal plan, "what are we having tonight" |

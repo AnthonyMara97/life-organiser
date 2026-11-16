@@ -1,6 +1,6 @@
 # 01 — Product Brief
 
-> Status: draft for review · Last updated: 15 Nov 2026
+> Status: draft for review · Last updated: 16 Nov 2026
 >
 > Items marked **(confirm)** are assumptions that need a yes/no from Anthony
 > before the roadmap is locked.
@@ -112,15 +112,15 @@ with *did you…?*".
 Explicitly out of scope. Listing these prevents drift.
 
 - **Not a bank.** No direct bank feeds or open banking in v1. Imports are file
-  based (Google Drive / CSV export).
+  based (a CSV export uploaded in the app).
 - **Not accounting software.** No tax returns, invoicing, GST, business
   bookkeeping, double-entry ledger.
 - **Not a multi-tenant product.** No sign-up, no billing, no admin panel, no
   roles beyond "member".
 - **Not a native mobile app.** A responsive, installable web app. No App Store.
 - **Not a social or sharing product.** No invitations, no public links.
-- **Not a document vault.** Files stay in Google Drive; the app reads what it
-  needs rather than storing copies (Phase 1 import only).
+- **Not a document vault.** The app never stores uploaded files: an import is
+  parsed in memory and discarded. There is no file library.
 - **Not offline-first.** v1 requires a connection; offline caching is a later
   consideration.
 - **No real financial data in the repository.** Ever.
@@ -140,7 +140,8 @@ Explicitly out of scope. Listing these prevents drift.
   stack, one architecture diagram, how to run it.
 - Seeded demo data that looks like a real household, not `lorem ipsum`.
 - A short write-up of two or three genuinely interesting problems solved (money
-  precision, idempotent CSV import, OAuth token handling, AI cost capping).
+  precision, idempotent CSV import, defensively parsing untrusted files, AI cost
+  capping).
 - Clean commit history and docs that show engineering judgement.
 - The owner can **explain every part of it** without notes.
 
@@ -162,9 +163,9 @@ Explicitly out of scope. Listing these prevents drift.
    address, balance, calendar entry or name of a real person appears in git.
 2. **Two allowlisted emails.** Sign-in attempts from anyone else are rejected at
    the auth callback, not merely hidden in the UI.
-3. **Least-privilege integrations.** Google Drive access uses the narrow file
-   picker scope so the user chooses one spreadsheet instead of granting access to
-   the whole drive.
+3. **Least data kept.** Imports are parsed in memory and discarded; the app keeps
+   only the resulting transactions and an import summary. No OAuth access to a
+   cloud drive, and no copy of a bank export at rest.
 4. **No card numbers, no bank credentials, no IDs.** The app stores amounts,
    dates, merchants and categories — not account numbers.
 5. **Deletable.** Any account can be deleted along with all of its rows; export
@@ -189,6 +190,7 @@ Explicitly out of scope. Listing these prevents drift.
 | Deadline | None. 13-week plan stands; 15 weeks acceptable; **16 weeks hard cap** | 15 Nov 2026 |
 | After February | Decide in January | 15 Nov 2026 |
 | Name | Life Organiser | 15 Nov 2026 |
+| CSV import source | **Upload in the app**; Google Drive dropped from v1 (FIN-11) | 16 Nov 2026 |
 
 ### Open
 
@@ -198,10 +200,8 @@ Explicitly out of scope. Listing these prevents drift.
    "who paid" dimension, or only "household"?
 3. **Budget period model** — under review now. Fortnightly, monthly, or two-tier.
    Blocks week 2.
-4. What is actually inside the Drive that needs connecting, and is it still
-   needed now that bank data arrives as CSV?
-5. What are the two or three meals-related decisions that cause the most
+4. What are the two or three meals-related decisions that cause the most
    friction? ("What's for dinner" and "what do we need to buy" are different
    problems.)
-6. Which notifications are welcome — in-app only, email, or phone push? Anything
+5. Which notifications are welcome — in-app only, email, or phone push? Anything
    that feels like nagging will be ignored.
