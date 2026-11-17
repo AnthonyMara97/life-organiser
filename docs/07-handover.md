@@ -5,32 +5,35 @@
 > first actions to take. It is a working document, not a permanent record — rewrite
 > it at the close of each session.
 >
-> **Last updated:** 16 November 2026, end of session 3.
-> **Next session starts at:** §0 — the first five minutes. Everything in the repo
-> is committed and pushed; confirm with `git status -sb`.
+> **Last updated:** 17 November 2026, end of session 4 (a short session).
+> **Next session starts at:** §0 — the read-back, which did **not** pass tonight.
+> Everything in the repo is committed and pushed; confirm with `git status -sb`.
 
 ---
 
-## 0. Start here — the first five minutes
+## 0. Start here — the read-back, second attempt
 
-**Do this before anything else: before asking what to work on, before reading code
-together, before planning.** Anthony asked to be prompted at the start of this
-session. This is a standing request, not a suggestion.
+**Do this before anything else.** The 17 November walkthrough did not pass:
+Anthony could not yet separate the three jobs inside `addMonthsClamped`. The gate
+is still open, and the session does not start properly until it closes.
 
-1. Ask him to open `src/lib/dates.ts` and read `addMonthsClamped` — the last
-   function in the file — either aloud or in his own words.
-2. Ask him two questions about it:
-   - *Why is the month total counted from year zero?*
-   - *Why is the day clamped to the end of the month instead of carrying over?*
-3. Work it through with concrete examples if the answer is shaky:
-   `addMonthsClamped("2026-01-31", 1)` → `"2026-02-28"` (not 3 March), and
+1. Ask him to open `src/lib/dates.ts` and re-explain `addMonthsClamped` without
+   looking at these notes.
+2. Target the three exact gaps found on 17 November:
+   - **Index vs leap years.** Why count months as `year * 12 + month - 1`? The
+     answer is one continuous number line, not leap years. Leap years belong to
+     the clamp; daylight saving never enters, because the arithmetic is UTC.
+   - **Validate vs clamp.** `parseDay` checks that the *input* day is real and
+     rejects 30 February. `daysInMonth` plus `Math.min` choose the *output* day.
+   - **Backward moves.** `addMonthsClamped("2027-01-31", -1)` is `"2026-12-31"`.
+     Trace it: 24,324 → 24,323 → year 2026, month 11 (December), day 31.
+3. Use the concrete cases:
+   `addMonthsClamped("2026-01-31", 1)` → `"2026-02-28"` (not 3 March) and
    `addMonthsClamped("2026-03-31", -1)` → `"2026-02-28"` (not 2 March).
-4. Do not move on until he can explain it. The working agreement says a piece is
-   not done until it can be explained back; that is the whole reason the project
-   exists. If it takes ten minutes, take ten minutes.
+4. Do not move on until he can say the two corrected lines in his own words. If
+   it takes ten minutes, take ten minutes.
 
-Only after that does the session start properly (frame → plan → build → verify →
-commit).
+Then the session starts properly: frame → plan → build → verify → commit.
 
 ---
 
@@ -44,6 +47,9 @@ commit).
 | Config decisions (A/B) | ✅ Applied and committed |
 | Scope decision (C) | ✅ Drive replaced by CSV upload, docs updated |
 | First real code | ✅ `src/lib/dates.ts` + Vitest, 15 tests |
+| Session 4 learning walkthrough | ⚠️ Done; the read-back did not pass |
+| Learning brief | ✅ Recorded in `AGENTS.md` and §8 below |
+| Decisions tonight | ❌ None — time ran out |
 | GitHub remote | ✅ Created, public: `github.com/AnthonyMara97/life-organiser` |
 | Anything pushed | ✅ Clean and level with `origin/main` — confirm with `git status -sb` |
 | Deployment | ❌ Not started |
@@ -55,6 +61,10 @@ Commit history, oldest last. Hashes changed when the author email was rewritten;
 trust the subjects if a hash ever looks wrong, and `git log -1` for the tip.
 
 ```
+docs: close session 4 with the read-back still open   ← this commit
+85aacc3 docs(learning): record the dates walkthrough and the open read-back
+19eb45d docs(agents): record the owner's learning brief
+acf2d33 docs: make the date read-back the first action next session
 d4e58b7 docs: record the first push and the email privacy fix
 ba47563 docs: record session 3 decisions and close the handover
 6d970ca feat(dates): add calendar-day helpers with tests
@@ -67,9 +77,9 @@ c755208 chore(next): disable component caching while learning
 bedbf8e docs: add initial project documentation
 ```
 
-**Verified at close of session:** `pnpm test` (15 passing), `pnpm typecheck`,
-`pnpm lint` and `pnpm build` all pass. Working tree clean. Local `HEAD` and
-`origin/main` matched at `d4e58b7` and the remote page showed 10 commits. Confirm
+**Verified at close of session 4:** a docs-only session, so the test, typecheck,
+lint and build results stand from 16 November (15 tests passing); they were not
+re-run. Working tree clean and level with `origin/main` after the push. Confirm
 with `git status -sb`: it must not say ahead or behind.
 
 ---
@@ -89,6 +99,7 @@ Everything lives inside Ubuntu, not Windows.
 | nvm | v0.41.0 |
 | git | 2.55.0. Global identity `AnthonyMara97 <amarafio2@gmail.com>`; this repo overrides the email to the GitHub no-reply address |
 | GitHub CLI | ❌ Not installed (no `gh` in WSL or Windows) |
+| Docker / `psql` / `neonctl` | ❌ Not installed (checked 17 Nov) |
 | SSH key | `~/.ssh/id_ed25519`, **passphrase-protected**, registered on GitHub as "WSL Ubuntu - Anthony (ed25519)" |
 | Remote | `git@github.com:AnthonyMara97/life-organiser.git` (public) |
 | VS Code | connected in WSL mode; badge bottom-left reads `WSL: Ubuntu` |
@@ -142,6 +153,7 @@ Do not tell him to paste error messages into the terminal.
 | Calendar-day representation | **ISO strings** (`"2026-11-16"`), arithmetic via `src/lib/dates.ts` | A day never becomes an instant; month-boundary and DST bugs cannot occur by construction |
 | Test runner | Vitest added | Justification: the runner the architecture already names, needed for date and money logic |
 | Git author email | Repository now commits as the GitHub no-reply address | Keeps the real Gmail out of a public repo; GitHub refuses pushes that expose a private email (GH007). Earlier commits were rewritten before the first push |
+| Learning brief (17 Nov) | Recorded in `AGENTS.md` and §8 | Future sessions teach pivotal decisions and pivotal code, not everything; shipping and learning are both named outcomes |
 
 Recorded in `docs/03-architecture.md` §12 and `docs/01-product-brief.md` §10.
 
@@ -157,8 +169,10 @@ savings-goal-as-P0. `BudgetPeriod` in `docs/03-architecture.md` is still marked
    functions (`getPeriodContaining`, `getActiveSchedule`, `getPeriodsBetween`) and
    Week 2. Do not write them against the proposed schema.
 2. **Local database.** Docker Postgres versus a Neon dev branch from day one.
-   Neon is less to install; Docker teaches the local workflow employers use. This
-   blocks the first Prisma migration.
+   `docker`, `psql` and `neonctl` are **not installed** (checked 17 Nov), so
+   Docker costs an install and a restart. **Proposed, not agreed:** Neon now,
+   Docker later as a deliberate learning session. This blocks the first Prisma
+   migration.
 3. **Google Cloud OAuth client** for Auth.js sign-in. Needs a Cloud project and
    consent screen; credentials are Anthony's to create. Budget a session.
 
@@ -166,12 +180,14 @@ savings-goal-as-P0. `BudgetPeriod` in `docs/03-architecture.md` is still marked
 
 ## 5. Next actions, in order
 
-1. **§0 first — the `addMonthsClamped` read-back.** It is a gate, not an optional
-   warm-up. Do not start new work until Anthony has explained it.
+1. **§0 first — the `addMonthsClamped` read-back, second attempt.** Tonight's
+   attempt did not pass. Target the three gaps listed in §0, and do not start new
+   work until Anthony can say the two corrected lines in his own words.
 
-2. **Decide the local database question** (open decision 2), then Week 1
-   infrastructure: Prisma with `User` + `Household`, first migration, Auth.js with
-   the two-email allowlist, app shell, Vercel deploy.
+2. **Decide the local database** (open decision 2), then Week 1 infrastructure:
+   Prisma with `User` + `Household`, first migration, Auth.js with the two-email
+   allowlist, app shell, Vercel deploy. Anthony plans a longer session tomorrow to
+   recover tonight's lost time.
 
 3. **When the budget period model is settled**, write the period functions with
    tests. Not before.
@@ -179,7 +195,7 @@ savings-goal-as-P0. `BudgetPeriod` in `docs/03-architecture.md` is still marked
 ### Shared context, in brief
 
 `AGENTS.md` is authoritative; this is the digest a fresh agent needs so it does not
-contradict the last three sessions.
+contradict the last four sessions.
 
 - **The product:** a private household app for exactly two people, built partly as
   a learning vehicle and portfolio piece. Finances come first. The repository is
@@ -246,3 +262,15 @@ disappear silently.
 | `docs/04-roadmap.md` | Is the request the current milestone? |
 | `docs/03-architecture.md` | Is there a recorded decision this contradicts? |
 | `docs/01-product-brief.md`, `docs/02-features.md` | Is this existing scope or new? |
+
+---
+
+## 8. Learning brief (added 17 Nov 2026)
+
+Anthony's stated outcome, recorded so no future session optimises only one half:
+**ship a usable v1 and become employable as a full stack developer.** Teach
+pivotal architecture decisions and pivotal code constructs; do not teach
+everything. Full wording in `AGENTS.md` → "What the owner is optimising for".
+
+The close-of-session rewrite must carry this forward, and must name the next
+session's single teaching focus.
