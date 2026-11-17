@@ -27,7 +27,7 @@ scratch` requires having done it in this project, unaided.
 |---|---|---|
 | Static vs dynamic typing | Choosing TypeScript | to learn |
 | `interface` vs `type` | Modelling transaction inputs | to learn |
-| Union types and narrowing | `needs_review \| confirmed` | to learn |
+| Union types and narrowing | `needs_review \| confirmed` | learning |
 | Generics | Prisma query helpers | to learn |
 | `strict` mode and `null` | Money fields that may be absent | to learn |
 | Type inference vs annotation | Zod schemas producing types | to learn |
@@ -56,7 +56,7 @@ scratch` requires having done it in this project, unaided.
 | Soft delete | Archiving categories | to learn |
 | Integer cents vs floating point | `0.1 + 0.2 !== 0.3` | to learn |
 | Dates vs timestamps, and timezones | `Australia/Melbourne` month boundaries | learning |
-| Recurrence maths | Bill due on the 31st, in February | to learn |
+| Recurrence maths | Bill due on the 31st, in February; clamping is not reversible | learning |
 
 ### Platform and infrastructure
 | Concept | Why it came up | Status |
@@ -76,6 +76,8 @@ scratch` requires having done it in this project, unaided.
 | Small commits and why | Every session | learning |
 | Tests that protect money and dates | Week 11 | learning |
 | Reading an error message before changing code | Every bug | learning |
+| Pure functions (same input, same output) | Why `dates.ts` is safe to test | learning |
+| Validating input vs deriving output | `parseDay` vs the month-end clamp | learning |
 | Technical writing | README as portfolio | to learn |
 | Explaining a trade-off | Every review | to learn |
 
@@ -95,6 +97,31 @@ Newest first. One entry per session where something was genuinely learned.
 **Still fuzzy:** what I could not explain yet.
 **Next:** the first thing to do next session.
 ```
+
+---
+
+### 2026-11-17 — Calendar days, and a read-back that did not pass
+
+**Built:** nothing in code. Walked through all seven functions in
+`src/lib/dates.ts`, recorded the owner's learning brief in `AGENTS.md`, and
+closed the session early. No decisions were made.
+
+**Learned:** a calendar day is text, and the arithmetic happens at UTC midnight,
+so a clock change cannot move it. `addMonthsClamped` has three separate jobs that
+are easy to blend together: index the month (`year * 12 + month - 1`), validate
+the input (`parseDay`), and clamp the output (`daysInMonth` plus `Math.min`).
+Leap years belong to the clamp. Daylight saving never enters, because the
+arithmetic is UTC. `parseDay` rejects 30 February rather than accommodating it.
+
+**Still fuzzy:** why the month index exists at all, if leap years and DST are
+handled elsewhere; the difference between what `parseDay` checks and what the
+clamp decides; and backward month moves —
+`addMonthsClamped("2027-01-31", -1)` is `"2026-12-31"`, not 3 March. The
+read-back did not pass, so the gate stays open; this is the first task next
+session.
+
+**Next:** re-do the read-back on those three points, then decide the local
+database (Neon or Docker) and start Prisma with `User` + `Household`.
 
 ---
 
