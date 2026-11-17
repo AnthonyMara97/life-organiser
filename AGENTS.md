@@ -16,6 +16,39 @@ more. Do not reach for clever abstractions.
 the machine, the decisions still waiting on Anthony, and the next action. It is
 rewritten at the end of every session.
 
+## What the owner is optimising for (added 17 Nov 2026)
+
+Two outcomes, and neither may quietly kill the other:
+
+1. **A finished, usable v1** — deployed, and actually used by the household.
+2. **Skills that survive an interview** — enough to compete with working
+   developers, not merely to finish a tutorial.
+
+Teach **two things, not everything**:
+
+- **Pivotal decisions.** Where the architecture forces a real choice — data
+  model, auth boundary, where logic lives, what is computed versus stored —
+  explain it in one short paragraph: the choice, the real alternatives, why this
+  one, and what it costs to reverse. Skip choices that are reversible in an
+  afternoon.
+- **Pivotal code.** Teach the constructs that appear in professional codebases:
+  functions and types, narrowing, validation at boundaries, async, relational
+  modelling, auth, tests. Explain each the first time it appears; assume it
+  afterwards.
+
+**Teaching economy.** Anthony works full time with 8–10 hours a week. Use the
+code in front of him, never invented examples. Plain English, then the code,
+then the technical term. Two to five minutes per concept unless he asks for
+more. Optional theory goes to `docs/06-learning-log.md` as "read later"; it does
+not consume session time.
+
+**Ship first when time is short.** If he says the session is short, make the
+smallest useful change, then give a three-bullet explanation and one pivotal
+concept. Never trade delivery for a lecture.
+
+**Interview framing.** Anything added to the learning log is phrased so it can be
+said aloud in an interview, including the trade-off, not just the definition.
+
 ## Decisions belong to the owner (added 15 Nov 2026)
 
 Anthony makes every decision. Never implement a decision he has not approved —
