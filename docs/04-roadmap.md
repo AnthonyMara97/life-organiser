@@ -1,22 +1,40 @@
 # 04 — Roadmap
 
-> Status: draft for review · Last updated: 16 Nov 2026
+> Status: re-planned 18 Nov 2026
 >
-> **Confirmed: 8–10 focused hours per week**, in two sessions. If the real number
-> is lower, cut scope — do not cut the buffer.
+> **Confirmed: 6 focused hours per week** — one hour on each weeknight, thirty
+> minutes on each weekend day. This is the real available time. Learning
+> fundamentals now happens outside this project (see `AGENTS.md`), so those hours
+> are not part of the budget.
 >
-> **Timeline (confirmed 15 Nov 2026): no hard deadline.** The 13-week plan below
-> stands as written, ending mid-February 2027. Up to 15 weeks is acceptable and
-> **16 weeks is the hard cap**, after which effort moves to a separate business
-> solution as the main portfolio project. Attention is expected to taper near the
-> end, which is why the highest-value features sit early in the plan.
+> **Timeline (re-confirmed 18 Nov 2026): no hard deadline.** The plan was costed
+> at 8–10 hours a week over 13 weeks. At 6 hours it is **stretched to 16 weeks**,
+> which is the hard cap Anthony set on 15 Nov. After that, effort moves to a
+> separate business solution as the main portfolio project.
 >
 > **After February: decide in January** whether this becomes maintenance-only or
 > pauses. Not decided yet — do not assume.
 
+## Re-plan — 18 November 2026
+
+Two changes, both Anthony's decisions:
+
+1. **Hours: 8–10 → 6 per week.** Weeks below keep their order and content but
+   take proportionally longer; the week numbers describe sequence, not calendar
+   dates. No week is compressed to catch up — a slipped week is a slipped date.
+2. **Learning narrowed to architecture.** The project no longer teaches coding,
+   and Anthony no longer writes code as a coaching exercise. Every **"Your turn"**
+   task below is **withdrawn**; the assistant builds instead. The **"Learn"** line
+   of each week becomes the week's **architectural concept** — one or two
+   sentences, named once, tied to the code in front of him.
+
+Scope rule at 6 hours: if a week overruns, cut its **P2** items first, then P1.
+The P0 feature of each milestone is what the milestone is for. Record the cut in
+`docs/02-features.md` §8, not by silently dropping it.
+
 ## Shape of the plan
 
-Thirteen weeks, five milestones, one vertical slice per milestone:
+Sixteen weeks, five milestones, one vertical slice per milestone:
 
 ```
 W1        W2–3        W4–5        W6–7      W8        W9        W10       W11       W12–13
@@ -29,8 +47,7 @@ Every week has the same six parts:
 |---|---|
 | **Focus** | The one thing this week is about |
 | **Build** | What exists at the end of the week |
-| **Learn** | Concepts you will be able to explain |
-| **Your turn** | A small piece you write yourself, without me driving |
+| **Learn** | The week's architectural concept, named once |
 | **Done when** | The acceptance test, in one sentence |
 | **Watch out** | The thing most likely to eat the week |
 
@@ -40,28 +57,35 @@ Every week has the same six parts:
 
 **Focus:** get a deployed, authenticated, empty app in front of you.
 
-**Build**
-- Git repo, pnpm, Next.js + TypeScript + Tailwind scaffolded.
-- Vercel project connected; Neon database created.
-- Prisma initialised, `User` + `Household` models, first migration.
-- Auth.js with Google; `ALLOWED_EMAILS` allowlist; sign-in works for two emails
-  and rejects a third.
-- App shell: sidebar on desktop, bottom tabs on phone, dark mode, placeholder
-  dashboard.
-- `.env.example`, `README` run instructions, `.gitignore` verified.
+**Already done** (sessions 1–5): repo, pnpm, Next.js + TypeScript + Tailwind
+scaffold, `.env.example`, app builds and tests. Prisma 7 is installed and the
+`Household` + `User` schema is committed — validated, but with no database behind
+it yet.
 
-**Learn:** what a repo is and why commits are small · TypeScript basics (types,
-interfaces, strict mode) · what a React component is · file-based routing ·
-environment variables and why secrets never go in git · what a migration is.
+**Build — in hourly sessions**
 
-**Your turn:** write the `login` page yourself (one button, minimal styling). I
-review it before it is committed.
+1. **Database.** Choose Neon or Docker (`docs/07-handover.md` §0), create it, put
+   `DATABASE_URL` in `.env.local`, install `@prisma/client`, run the first
+   migration. Two tables exist.
+2. **Auth.** Auth.js with Google; `ALLOWED_EMAILS` allowlist enforced in the
+   `signIn` callback; sign-in works for two emails and rejects a third.
+
+   *Anthony's own task, before this session: create the Google Cloud OAuth client
+   — project, consent screen, redirect URIs. Screenshot each step.*
+3. **Shell.** Sidebar on desktop, bottom tabs on phone, placeholder dashboard;
+   sign-in page that works at 390px.
+4. **Deploy.** Vercel project connected to the GitHub repo, environment variables
+   set, production database in Neon.
+
+**Concept of the week:** the schema is the source of truth and the migration it
+generates is versioned SQL you commit — plus, for auth, that the *server* decides
+who is allowed in and the client only asks.
 
 **Done when:** you sign in from your phone on the deployed URL, using only the
 allowlisted emails, and see an empty dashboard.
 
-**Watch out:** Google OAuth setup (consent screen, redirect URIs). Budget a
-session for it and take screenshots as you go so it is repeatable.
+**Watch out:** Google OAuth setup (consent screen, redirect URIs) is the most
+likely thing to eat the hour. Take screenshots as you go so it is repeatable.
 
 ---
 
@@ -351,7 +375,7 @@ plan. If nothing slips, use it for the first Phase 2 feature.
 
 | Risk | Likelihood | Mitigation |
 |---|---|---|
-| Hours fall short of 8–10/week | High | Buffer week 13; each week's "Build" list is ordered so the top two items alone constitute a usable increment |
+| Hours fall short of 6/week | High | 16-week stretch; each week's "Build" list is ordered so the top two items alone constitute a usable increment. Cut P2, never the P0 |
 | Christmas and New Year disruption | Certain | Weeks 6 and 7 are deliberately light |
 | CSV edge cases (encoding, quoting) burn a week | Medium | Build fixtures from a redacted real export and test the parser before the UI; milestone 9 is late enough to absorb a slip |
 | Scope creep (every new idea feels essential) | High | New ideas go to `02-features.md` §8, not the sprint |
@@ -360,9 +384,12 @@ plan. If nothing slips, use it for the first Phase 2 feature.
 
 ## Weekly rhythm
 
-1. **Plan (15 min):** re-read the week, confirm the "Done when", agree the first
-   session's goal.
-2. **Build (two sessions):** small commits, explanation after each.
-3. **Review (30 min):** run it on both devices, fix what is broken, update the
-   learning log.
-4. **Close:** tick the week off here, note any slippage immediately.
+Five weeknight sessions of one hour, two weekend sessions of thirty minutes.
+
+1. **Decide (first 10 minutes):** the assistant puts the one blocking decision,
+   with options and a recommendation. Anthony answers.
+2. **Build (the rest):** one batch, no mid-build check-ins.
+3. **Review before commit (up to 20 minutes, outside the hour):** the assistant
+   shows what changed and why; Anthony reviews; then it is committed and pushed.
+4. **Close:** rewrite `docs/07-handover.md`, naming the next blocking decision and
+   the session's architectural concept.

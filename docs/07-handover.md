@@ -5,63 +5,87 @@
 > first actions to take. It is a working document, not a permanent record — rewrite
 > it at the close of each session.
 >
-> **Last updated:** 17 November 2026, end of session 4 (a short session).
-> **Next session starts at:** §0 — the read-back, which did **not** pass tonight.
-> Everything in the repo is committed and pushed; confirm with `git status -sb`.
+> **Last updated:** 18 November 2026, end of session 5.
+> **Next session:** Thursday 19 November, one hour. Starts at §0.
+> Confirm the repo state with `git status -sb` before anything else.
 
 ---
 
-## 0. Start here — the read-back, second attempt
+## 0. Start here — one decision blocks everything
 
-**Do this before anything else.** The 17 November walkthrough did not pass:
-Anthony could not yet separate the three jobs inside `addMonthsClamped`. The gate
-is still open, and the session does not start properly until it closes.
+**The database has nowhere to run.** Do not write code before this is settled: it
+blocks the first migration, the Prisma client, Auth.js and the deploy.
 
-1. Ask him to open `src/lib/dates.ts` and re-explain `addMonthsClamped` without
-   looking at these notes.
-2. Target the three exact gaps found on 17 November:
-   - **Index vs leap years.** Why count months as `year * 12 + month - 1`? The
-     answer is one continuous number line, not leap years. Leap years belong to
-     the clamp; daylight saving never enters, because the arithmetic is UTC.
-   - **Validate vs clamp.** `parseDay` checks that the *input* day is real and
-     rejects 30 February. `daysInMonth` plus `Math.min` choose the *output* day.
-   - **Backward moves.** `addMonthsClamped("2027-01-31", -1)` is `"2026-12-31"`.
-     Trace it: 24,324 → 24,323 → year 2026, month 11 (December), day 31.
-3. Use the concrete cases:
-   `addMonthsClamped("2026-01-31", 1)` → `"2026-02-28"` (not 3 March) and
-   `addMonthsClamped("2026-03-31", -1)` → `"2026-02-28"` (not 2 March).
-4. Do not move on until he can say the two corrected lines in his own words. If
-   it takes ten minutes, take ten minutes.
+Put the choice to Anthony in exactly these terms, then stop and wait.
 
-Then the session starts properly: frame → plan → build → verify → commit.
+| | Neon dev branch | Docker Postgres |
+|---|---|---|
+| What it is | Hosted Postgres, free tier | Postgres in a container on his laptop |
+| Time to first query | ~5 minutes | 20–40 minutes, possible WSL restart |
+| Production parity | Same provider as production (architecture §11) | A second setup to maintain |
+| Offline | Needs internet; sleeps when idle | Works offline |
+| Learning value | Branching, pooling | Containers, volumes, ports |
+| Cost to reverse | Change `DATABASE_URL`, re-seed | `pg_dump` and restore once real data exists |
+
+**Recommendation to give him: Neon.** Production is Neon either way, so Docker
+means running two different database setups and meeting the differences on the
+deployed app. Docker is worth a deliberate session of its own — not tonight's
+only hour.
+
+Once he answers, the order is: create the database → put the connection string in
+`.env.local` (never in chat) → approve the blocked build scripts (below) → install
+`@prisma/client` → `pnpm exec prisma migrate dev --name init`.
 
 ---
 
-## 1. Where things stand
+## 1. What changed on 18 November: the working mode
+
+**This is the most important section for a new agent.** The project's purpose has
+been narrowed, by Anthony, and the standing rules were rewritten to match.
+
+- The project is now a **shipping project**. It builds a real household app, and
+  it teaches **software architecture** — how the pieces fit and why.
+- **It no longer teaches coding.** No syntax lessons, no walkthroughs, no
+  read-backs, no "explain it back". He learns fundamentals on his own time and
+  asked specifically that this repo not be used as a tutorial.
+- **One architectural concept per session**, two or three sentences, tied to the
+  code in front of him. Explanations on request. That is the only teaching.
+- **He reviews every commit first.** Show the overview in chat, wait, then commit.
+  Budget up to 20 minutes on top of the session.
+- **The `dates.ts` read-back gate is dead.** It was created to prove comprehension
+  and is withdrawn along with the teaching brief. Both failed attempts (17 and 18
+  Nov) are recorded in the frozen learning log; nothing further is owed. Do not
+  re-open it, and do not re-explain `dates.ts`.
+- The 17 Nov learning brief is withdrawn. Full wording of the new brief is in
+  `AGENTS.md` → "What the owner is optimising for (revised 18 Nov 2026)".
+
+`AGENTS.md`, `docs/05-working-agreement.md` and `docs/04-roadmap.md` were updated
+in the same commit so that no document contradicts this one.
+
+---
+
+## 2. Where things stand
 
 | | Status |
 |---|---|
 | Planning documents | ✅ Written, reviewed, committed |
 | Machine setup | ✅ WSL Ubuntu + nvm + Node 26 + pnpm |
 | Next.js scaffold | ✅ Builds, typechecks, lints |
-| Config decisions (A/B) | ✅ Applied and committed |
-| Scope decision (C) | ✅ Drive replaced by CSV upload, docs updated |
-| First real code | ✅ `src/lib/dates.ts` + Vitest, 15 tests |
-| Session 4 learning walkthrough | ⚠️ Done; the read-back did not pass |
-| Learning brief | ✅ Recorded in `AGENTS.md` and §8 below |
-| Decisions tonight | ❌ None — time ran out |
-| GitHub remote | ✅ Created, public: `github.com/AnthonyMara97/life-organiser` |
-| Anything pushed | ✅ Clean and level with `origin/main` — confirm with `git status -sb` |
-| Deployment | ❌ Not started |
-| Database | ❌ Not started |
+| `src/lib/dates.ts` | ✅ Written, 15 tests passing. **Do not re-teach it** |
+| Prisma | ⚠️ Installed and configured; no database, no client, no migration |
+| Database | ❌ Not chosen, not created |
 | Auth | ❌ Not started |
 | App UI | ❌ Still "Hello world!" |
+| Deployment | ❌ Not started |
+| GitHub remote | ✅ Public, `github.com/AnthonyMara97/life-organiser` |
+| Roadmap | ✅ Re-planned 18 Nov: 6 hours/week, 16 weeks |
 
-Commit history, oldest last. Hashes changed when the author email was rewritten;
-trust the subjects if a hash ever looks wrong, and `git log -1` for the tip.
+Commit history, oldest last:
 
 ```
-docs: close session 4 with the read-back still open   ← this commit
+docs: switch to shipping mode and re-plan at six hours a week   ← this commit
+feat(db): add Prisma schema for Household and User
+7c28b32 docs: close session 4 with the read-back still open
 85aacc3 docs(learning): record the dates walkthrough and the open read-back
 19eb45d docs(agents): record the owner's learning brief
 acf2d33 docs: make the date read-back the first action next session
@@ -77,14 +101,59 @@ c755208 chore(next): disable component caching while learning
 bedbf8e docs: add initial project documentation
 ```
 
-**Verified at close of session 4:** a docs-only session, so the test, typecheck,
-lint and build results stand from 16 November (15 tests passing); they were not
-re-run. Working tree clean and level with `origin/main` after the push. Confirm
-with `git status -sb`: it must not say ahead or behind.
+---
+
+## 3. This week's plan — Thursday 19 to Sunday 22 November
+
+Six hours a week: one hour on each weeknight, thirty minutes on each weekend day.
+Tonight (Wednesday) is spent. Three hours remain this week.
+
+| When | Hour | Goal |
+|---|---|---|
+| **Thu 19** | 1h | Database decision, then the first migration. Concept: **the schema is the source of truth, and a migration is versioned SQL that you commit** |
+| **Fri 20** | 1h | Auth.js with Google and the `ALLOWED_EMAILS` allowlist. Concept: **the server decides who is allowed in; the client only asks** |
+| **Sat 21** | 30m | App shell and a sign-in page that renders on a 390px phone |
+| **Sun 22** | 30m | Deploy to Vercel, sign in from a phone |
+
+**Anthony's own task before Friday:** create the Google Cloud OAuth client
+(project, consent screen, redirect URIs). It is his to create — an agent cannot.
+Allow 15 minutes of clicking, and screenshot each step so it is repeatable.
+
+**At risk:** Week 1's acceptance test — signing in from a phone on the deployed
+URL — may land on Monday rather than Sunday at 3 hours. That is acceptable at this
+new pace. Do not compress two weeks into one to catch up.
 
 ---
 
-## 2. The machine, as it actually is
+## 4. Decisions still open — ask before coding
+
+1. **The database** (§0). Blocks Thursday entirely.
+2. **Budget period model.** Fortnightly, monthly, or two-tier. Blocks the period
+   functions and Week 2. `BudgetPeriod` is still marked `(proposed)` in
+   `docs/03-architecture.md` and must stay that way.
+3. **Sign-in user provisioning.** Auth.js normally ships a Prisma adapter with
+   `Account` and `Session` tables. The architecture specifies JWT sessions and a
+   `User` row created on first sign-in, which needs no adapter. Confirm the
+   approach before implementing — it is a data-model decision, not execution
+   detail.
+4. **Two-tier ledger** (`needs_review` vs `confirmed`) and **savings-goal-as-P0** —
+   still unconfirmed from earlier sessions.
+
+---
+
+## 5. Next actions, in order
+
+1. Put the database decision to Anthony (§0). Do not build around it.
+2. Create the database, set `DATABASE_URL` in `.env.local`, run the first
+   migration, and confirm the two tables exist.
+3. Install `@prisma/client`, add `db:migrate`, `db:studio`, `db:seed` scripts.
+4. Auth.js, app shell, deploy.
+5. When the budget period model is settled, write the period functions with tests.
+   Not before.
+
+---
+
+## 6. The machine, as it actually is
 
 Everything lives inside Ubuntu, not Windows.
 
@@ -93,166 +162,81 @@ Everything lives inside Ubuntu, not Windows.
 | Distro | Ubuntu on WSL2, user `anthony` |
 | Project path (Linux) | `/home/anthony/repos/life-organiser` |
 | Project path (Windows) | `\\wsl.localhost\Ubuntu\home\anthony\repos\life-organiser` |
-| Node | v26.13.1 LTS, installed by nvm into `~/.nvm` |
-| npm | 11.20.0 (ships with Node) |
-| pnpm | 12.21.0, installed globally via npm |
-| nvm | v0.41.0 |
-| git | 2.55.0. Global identity `AnthonyMara97 <amarafio2@gmail.com>`; this repo overrides the email to the GitHub no-reply address |
-| GitHub CLI | ❌ Not installed (no `gh` in WSL or Windows) |
+| Node | v26.13.1 LTS via nvm (`~/.nvm`) |
+| pnpm | 12.21.0 · npm 11.20.0 · nvm v0.41.0 · git 2.55.0 |
+| git identity | `AnthonyMara97`; repo overrides email to the GitHub no-reply address |
+| GitHub CLI | ❌ Not installed |
 | Docker / `psql` / `neonctl` | ❌ Not installed (checked 17 Nov) |
-| SSH key | `~/.ssh/id_ed25519`, **passphrase-protected**, registered on GitHub as "WSL Ubuntu - Anthony (ed25519)" |
+| SSH key | `~/.ssh/id_ed25519`, **passphrase-protected** |
 | Remote | `git@github.com:AnthonyMara97/life-organiser.git` (public) |
-| VS Code | connected in WSL mode; badge bottom-left reads `WSL: Ubuntu` |
 
 Windows has no Node, pnpm or git. Do not run project commands from PowerShell.
 
-### Behaviours that will waste time if forgotten
+### Behaviours that waste time if forgotten
 
 1. **`node` only exists in an interactive shell.** Use
    `wsl -d Ubuntu -- bash -ic '...'` (`-i`), never `bash -lc` (`-l`).
-2. **PowerShell eats `$?` and inner double quotes before bash sees them.** A check
-   like `...; echo EXIT:$?` reports PowerShell's last result (`True`), not the
-   command's. Long `git commit -m "..."` commands also lose their quoting. Write a
-   short `.sh` file into `/tmp` and run `wsl -d Ubuntu -- bash /tmp/script.sh`.
-3. **Non-interactive SSH cannot use the passphrase-protected key.** GitHub accepts
-   the key (fingerprint matches), but signing fails without a passphrase prompt.
-   An agent runs at a fixed socket: `/tmp/ssh-agent.sock`, unlocked once with:
-
-   ```bash
-   SSH_AUTH_SOCK=/tmp/ssh-agent.sock ssh-add ~/.ssh/id_ed25519
-   ```
-
-   The agent dies with the WSL instance. After a restart, start a new one with
-   `ssh-agent -a /tmp/ssh-agent.sock`, add the key again, and prefix SSH commands
-   with `SSH_AUTH_SOCK=/tmp/ssh-agent.sock`.
-4. **`pnpm build` writes to stderr on success**, so PowerShell may show a red
-   "NativeCommandError" banner even when the build passed. Read the exit code, not
-   the colour.
-5. **GitHub rejects pushes that expose a private email (GH007).** The repo-local
-   `user.email` is now the GitHub no-reply address. A commit made with the global
-   Gmail identity will be rejected on push; check `git log -1 --format=%ae` before
-   suspecting the key. Never "fix" this by making the Gmail public.
-
-### How Anthony opens the project
-
-In VS Code: Command Palette → **WSL: Open Folder in WSL** →
-`/home/anthony/repos/life-organiser`. Confirm the prompt reads
-`anthony@...:~/repos/life-organiser$` before he runs anything.
-
-Do not tell him to paste error messages into the terminal.
+2. **PowerShell eats `$?` and inner double quotes.** Long commands lose their
+   quoting; write a short `.sh` into `/tmp` and run `wsl -d Ubuntu -- bash /tmp/x.sh`.
+3. **No SSH agent was running at the close of session 5**, so the push was left to
+   Anthony. To create one:
+   `ssh-agent -a /tmp/ssh-agent.sock`, then
+   `SSH_AUTH_SOCK=/tmp/ssh-agent.sock ssh-add ~/.ssh/id_ed25519` (passphrase
+   prompt). The agent dies with the WSL instance.
+4. **`pnpm build` writes to stderr on success**, and **`pnpm add` prints a red
+   `ERR_PNPM_IGNORED_BUILDS` even when the package installs.** Read the exit path,
+   not the colour.
+5. **GitHub rejects commits that expose a private email (GH007).** Check
+   `git log -1 --format=%ae` before blaming the key. Never make the Gmail public.
+6. **pnpm blocks install scripts** (`allowBuilds` in `pnpm-workspace.yaml`).
+   Prisma needs `prisma`, `@prisma/engines` and `esbuild` approved before the
+   client will generate. That is a security decision: ask Anthony, then add them
+   to `allowBuilds`.
 
 ---
 
-## 3. Decisions made this session
+## 7. What was actually done on 18 November
 
-| Decision | Choice | Consequence |
-|---|---|---|
-| A. `@types/node` | Bump to `^26` | Types describe the runtime actually used |
-| B. Caching | `cacheComponents` **and** `partialPrefetching` off | Next.js refuses to build with one on and the other off, so they move together. Pages render fresh; revisit when caching is learned deliberately |
-| C. Google Drive import | **Dropped from v1.** FIN-8 becomes in-app CSV upload; file parsed in memory and discarded. Drive parked as FIN-11 (Phase 2, P2) | Week 9 is tractable and testable; OAuth returns with calendar integration |
-| Calendar-day representation | **ISO strings** (`"2026-11-16"`), arithmetic via `src/lib/dates.ts` | A day never becomes an instant; month-boundary and DST bugs cannot occur by construction |
-| Test runner | Vitest added | Justification: the runner the architecture already names, needed for date and money logic |
-| Git author email | Repository now commits as the GitHub no-reply address | Keeps the real Gmail out of a public repo; GitHub refuses pushes that expose a private email (GH007). Earlier commits were rewritten before the first push |
-| Learning brief (17 Nov) | Recorded in `AGENTS.md` and §8 | Future sessions teach pivotal decisions and pivotal code, not everything; shipping and learning are both named outcomes |
+Lean on this rather than re-deriving it.
 
-Recorded in `docs/03-architecture.md` §12 and `docs/01-product-brief.md` §10.
-
-**Still unconfirmed:** the two-tier ledger (confirmed vs draft) and
-savings-goal-as-P0. `BudgetPeriod` in `docs/03-architecture.md` is still marked
-`(proposed)` and must stay that way until Anthony confirms it.
-
----
-
-## 4. Decisions still open — ask before coding
-
-1. **Budget period model.** Fortnightly, monthly, or two-tier. Blocks the period
-   functions (`getPeriodContaining`, `getActiveSchedule`, `getPeriodsBetween`) and
-   Week 2. Do not write them against the proposed schema.
-2. **Local database.** Docker Postgres versus a Neon dev branch from day one.
-   `docker`, `psql` and `neonctl` are **not installed** (checked 17 Nov), so
-   Docker costs an install and a restart. **Proposed, not agreed:** Neon now,
-   Docker later as a deliberate learning session. This blocks the first Prisma
-   migration.
-3. **Google Cloud OAuth client** for Auth.js sign-in. Needs a Cloud project and
-   consent screen; credentials are Anthony's to create. Budget a session.
+- **Prisma 7.10.1 installed** as a dev dependency. Deliberate: the registry's
+  `latest` tag currently points at `8.0.0-rc.34`, a release candidate. Stable is
+  pinned. Reversing is a version bump plus deleting `prisma.config.ts`.
+- **`prisma/schema.prisma`** — `Household` and `User`, exactly as
+  `docs/03-architecture.md` §3 specifies, plus the `Role` enum
+  (`member` | `demo`). Locale-dependent timestamps use `@db.Timestamptz(3)`,
+  because Prisma's default `TIMESTAMP(3)` has no timezone and the architecture
+  requires moments in time to be timestamptz.
+- **`prisma.config.ts`** — Prisma 7 removed `url` from the schema. The CLI takes
+  the URL from this file; the app will take a driver adapter instead.
+- **`.env.example`** created, and `.gitignore` fixed: the blanket `.env*` rule was
+  also excluding `.env.example`, which must be committed.
+- **Verified:** `prisma validate` passes, and
+  `prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script`
+  produces the exact SQL the first migration will contain. `pnpm typecheck`,
+  `pnpm lint` and `pnpm test` (15 tests) all pass.
+- **Not done, deliberately:** no database, no `@prisma/client`, no generated
+  client, no migration, no `.env.local`. The schema is committed as text only.
 
 ---
 
-## 5. Next actions, in order
-
-1. **§0 first — the `addMonthsClamped` read-back, second attempt.** Tonight's
-   attempt did not pass. Target the three gaps listed in §0, and do not start new
-   work until Anthony can say the two corrected lines in his own words.
-
-2. **Decide the local database** (open decision 2), then Week 1 infrastructure:
-   Prisma with `User` + `Household`, first migration, Auth.js with the two-email
-   allowlist, app shell, Vercel deploy. Anthony plans a longer session tomorrow to
-   recover tonight's lost time.
-
-3. **When the budget period model is settled**, write the period functions with
-   tests. Not before.
-
-### Shared context, in brief
-
-`AGENTS.md` is authoritative; this is the digest a fresh agent needs so it does not
-contradict the last four sessions.
-
-- **The product:** a private household app for exactly two people, built partly as
-  a learning vehicle and portfolio piece. Finances come first. The repository is
-  public; no real household data, balances, addresses or names may enter it.
-- **Agreed and not to be relitigated without Anthony:** Next.js + TypeScript +
-  Tailwind; PostgreSQL + Prisma; Auth.js with Google and a two-email allowlist;
-  money as integer cents; calendar days as ISO strings; CSV upload instead of
-  Google Drive; AI capture in Phase 4; component caching off.
-- **Still proposed, not agreed:** the two-tier ledger (`needs_review` vs
-  `confirmed`) and savings-goal-as-P0. `BudgetPeriod` stays marked `(proposed)`.
-- **He decides, you propose.** For anything that is not execution detail, give one
-  sentence of decision, two or three real options, a recommendation with what
-  could go wrong, and the cost to reverse — then stop. Never "I went ahead and".
-- **Execution detail proceeds:** names, file placement, formatting. Mention it in
-  the summary.
-- **No dependency without a one-sentence justification and his agreement.**
-- **British spelling in prose and UI** ("organise", "colour"); US spelling in code
-  identifiers to match libraries.
-- **Commits:** one logical change, Conventional Commits, body explains **why**.
-  Push at the end of every session.
-- **Definition of done:** mobile and desktop, server-side validation,
-  household-scoped queries, loading/empty/error states, `pnpm typecheck`,
-  `pnpm lint`, `pnpm test`, docs updated, and Anthony can explain the change.
-- **Where the fuller memory lives:** `docs/05-working-agreement.md` (how we work),
-  `docs/03-architecture.md` §12 (every technical decision and what was rejected),
-  `docs/06-learning-log.md` (what he has actually learned), `docs/02-features.md`
-  §8 (parked scope, including FIN-11 Drive).
-
-### The teaching method agreed with him
-
-Plain English first, then the code, then the technical term for what he just saw.
-He is a beginner: he needs to know what a function, a variable and a test are, and
-will learn generics and narrowing by writing rather than reading. Do not open with
-jargon.
-
----
-
-## 6. The scaffold, recorded honestly
+## 8. The scaffold, recorded honestly
 
 `create-next-app` produced 11 files. The template `README.md` and `AGENTS.md` were
 replaced; Next.js's guidance for coding agents is preserved at
-`docs/reference/nextjs-agent-notes.md`. `package.json` was renamed to
-`life-organiser`, a `typecheck` script added, and this session added `test` and
-`test:watch`.
+`docs/reference/nextjs-agent-notes.md`.
 
-Still unreviewed, and owed an explanation: `target: "ES2017"` and `allowJs: true`
-in `tsconfig.json`, and `sharp: false` / `unrs-resolver: false` in
-`pnpm-workspace.yaml` (install scripts blocked — a security default).
-`partialPrefetching` has now been removed along with `cacheComponents`.
+Still unreviewed, and owed an explanation as an **architectural** note — not a
+lesson: `target: "ES2017"` and `allowJs: true` in `tsconfig.json`, and
+`sharp: false` / `unrs-resolver: false` in `pnpm-workspace.yaml` (install scripts
+blocked — a security default).
 
-The hand-rebuild exercise in `~/repos/scratch-next` is still owed. It is a learning
-task, not a project task; it can wait for a week with slack, but do not let it
-disappear silently.
+The hand-rebuild exercise in `~/repos/scratch-next` is **cancelled** under the new
+brief. It was a learning task.
 
 ---
 
-## 7. What to read, in what order
+## 9. What to read, in what order
 
 | File | Why |
 |---|---|
@@ -263,14 +247,15 @@ disappear silently.
 | `docs/03-architecture.md` | Is there a recorded decision this contradicts? |
 | `docs/01-product-brief.md`, `docs/02-features.md` | Is this existing scope or new? |
 
+`docs/06-learning-log.md` is frozen. Read it for history only.
+
 ---
 
-## 8. Learning brief (added 17 Nov 2026)
+## 10. The session's architectural concept
 
-Anthony's stated outcome, recorded so no future session optimises only one half:
-**ship a usable v1 and become employable as a full stack developer.** Teach
-pivotal architecture decisions and pivotal code constructs; do not teach
-everything. Full wording in `AGENTS.md` → "What the owner is optimising for".
+Session 5's concept: **the schema is the source of truth, and the migration it
+generates is versioned SQL you commit** — Prisma only translates one into the
+other, and in Prisma 7 the *shape* of the data lives in the schema while the
+*connection* lives in `prisma.config.ts`.
 
-The close-of-session rewrite must carry this forward, and must name the next
-session's single teaching focus.
+Session 6 should name its own, in one or two sentences, in §10 of its rewrite.

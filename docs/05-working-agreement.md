@@ -1,6 +1,7 @@
 # 05 — Working Agreement
 
-> How Anthony and the AI assistant build this together. · 15 Nov 2026
+> How Anthony and the AI assistant build this together. · 15 Nov 2026, revised
+> 18 Nov 2026.
 >
 > The point of this file: a project this long drifts without agreed rules. These
 > are the rules. Change them deliberately, not accidentally.
@@ -10,16 +11,16 @@
 **Anthony — product owner**
 - Decides what the app does, in what order, and for whom.
 - Has final say on every user-facing decision.
-- Must be able to explain every part of the codebase out loud.
+- Understands the architecture of every change before it is committed.
 - Reviews every change before it is committed.
-- Owns the learning: if something is not understood, it stops until it is.
+- Owns the scope: if it is not clear what is being built, it stops until it is.
 
-**The assistant — senior pair**
+**The assistant — senior engineer**
 - Proposes designs and explains trade-offs before writing code.
-- Writes most of the code in small, reviewable pieces.
-- Names and explains every unfamiliar concept once.
+- Writes the code, in small, reviewable pieces.
+- Names the architectural concept behind each change, once.
 - Flags risk early: scope, security, time, complexity.
-- Refuses to ship something neither of us can explain.
+- Refuses to ship something neither of us can explain at the architecture level.
 
 Neither of us invents requirements. If a decision is unclear, it is asked, and the
 answer is written into `01-product-brief.md`.
@@ -54,17 +55,20 @@ document before Anthony has agreed to it, it is labelled `(proposed)`. A proposa
 sitting in a doc is not an agreement, and must not be treated as one in a later
 session.
 
-## 2. Two working modes
+## 2. How a session runs
 
-We choose one at the start of each session.
+Revised 18 Nov 2026. The pair/coach split is withdrawn along with the teaching
+brief: Anthony no longer writes code as an exercise.
 
-| Mode | Who types | When |
-|---|---|---|
-| **Pair** | Assistant writes, Anthony reviews each step | New concepts, unfamiliar territory, plumbing |
-| **Coach** | Anthony writes, assistant reviews | The week's "Your turn" task, and anything already seen once |
-
-The roadmap assigns at least one coach task every week. Those are not optional —
-they are how the knowledge transfers.
+1. **Decide.** The assistant opens with the one decision blocking the milestone —
+   one sentence, two or three options, a recommendation, the cost to reverse — and
+   waits.
+2. **Build.** One batch, no mid-build check-ins unless something breaks or a new
+   decision appears.
+3. **Overview, then commit.** The assistant shows what changed and why, in the
+   chat. Anthony reviews every commit and must understand it before it goes in.
+   Budget up to 20 minutes beyond the session's hour.
+4. **Push and close.** One logical change per commit; handover rewritten.
 
 ## 3. Session protocol
 
@@ -80,14 +84,19 @@ they are how the knowledge transfers.
 If a step takes longer than expected, we say so and cut scope — we do not silently
 extend the session.
 
-## 4. The explain-back rule
+## 4. The architecture rule
 
-At the end of every milestone, Anthony explains one non-trivial piece back to the
-assistant in his own words, without looking at the code.
+Replaced 18 Nov 2026. The explain-back rule — Anthony recites code in his own
+words at every milestone — is withdrawn, because the project no longer teaches
+coding.
 
-If the explanation is vague, that piece is not done, regardless of whether it
-works. This is the entire reason for building a portfolio project instead of
-following a tutorial: in an interview, the explanation is the product.
+Instead: at the close of each session the assistant names **one architectural
+concept**, in two or three sentences, tied to the code that just changed. How the
+pieces fit, or why a boundary sits where it does. Anthony asks for more whenever he
+wants it; he is not examined on it.
+
+What is tested is whether the app ships, and whether Anthony can walk another
+developer through its architecture — not whether he can write it unaided.
 
 ## 5. Code rules
 
@@ -121,7 +130,7 @@ A change is done when all of these are true:
 - [ ] Household scoping verified
 - [ ] Loading, empty and error states exist
 - [ ] `pnpm typecheck`, `pnpm lint`, `pnpm test` pass
-- [ ] Reviewed by Anthony, not just accepted
+- [ ] Reviewed by Anthony **before** the commit, not after
 - [ ] Relevant doc updated
 - [ ] Committed with a why-message
 
@@ -156,16 +165,15 @@ Non-negotiable, every session:
 | Real data enters the repo | Stop, remove it from history, rotate anything exposed, then continue. |
 | Motivation drops | Go back to §5 of the brief: is the app saving time yet? If not, ship something small that does. |
 
-## 11. What "learning" looks like here
+## 11. What "learning" means here (revised 18 Nov 2026)
 
-Not: following along while code appears.
+The learning this project is responsible for is **architectural**: where the
+pieces live, what each layer is allowed to do, and why the boundaries sit where
+they do. Coding fundamentals are learned elsewhere, on Anthony's own study plan.
 
-Yes:
-- Predicting what a change will do before running it.
-- Reading an error message and forming a hypothesis.
-- Explaining a trade-off, not just a definition.
-- Breaking the app on purpose and knowing where to look.
-- Writing one thing a week without help.
+Not this project's job: syntax, language features, beginner walkthroughs, or
+writing code as an exercise.
 
-The test of success at week 12 is not "the app works". It is "Anthony can be
-dropped into the codebase cold and find his way around."
+Success at week 16: the app is deployed and used daily, and Anthony can walk
+another developer through its architecture — data model, request path, auth
+boundary, and the decisions behind them — without notes.
