@@ -5,13 +5,26 @@
 > first actions to take. It is a working document, not a permanent record — rewrite
 > it at the close of each session.
 >
-> **Last updated:** 18 November 2026, end of session 5.
-> **Next session:** Thursday 19 November, one hour. Starts at §0.
+> **Last updated:** 18 November 2026, end of session 5 (second pass).
+> **Next session:** Thursday 19 November — a morning session on the Google Cloud
+> OAuth client, then the usual one-hour session in the evening. Starts at §0.
 > Confirm the repo state with `git status -sb` before anything else.
 
 ---
 
-## 0. Start here — one decision blocks everything
+## 0. Start here
+
+### 0.1 Thursday morning — Google Cloud OAuth client (Anthony's request)
+
+He asked for a walkthrough of creating the OAuth client. **Walk him through it**:
+Cloud project, OAuth consent screen, credentials, redirect URIs for localhost and
+Vercel, then where each value goes in `.env.local`.
+
+This is operational, not a coding lesson — it fits the current brief. Have him
+drive; do not create the credentials for him. Screenshot each step into the repo
+**only if the screenshots contain no account identifiers**.
+
+### 0.2 Thursday evening — one decision blocks everything
 
 **The database has nowhere to run.** Do not write code before this is settled: it
 blocks the first migration, the Prisma client, Auth.js and the deploy.
@@ -33,8 +46,16 @@ deployed app. Docker is worth a deliberate session of its own — not tonight's
 only hour.
 
 Once he answers, the order is: create the database → put the connection string in
-`.env.local` (never in chat) → approve the blocked build scripts (below) → install
-`@prisma/client` → `pnpm exec prisma migrate dev --name init`.
+`.env.local` (never in chat) → `pnpm exec prisma migrate dev --name init`.
+
+**Before that migration runs, one small thing must be fixed.** Prisma 7 does not
+load `.env.local` by itself, and `prisma.config.ts` calls `env("DATABASE_URL")`
+eagerly, so the CLI will fail with `PrismaConfigEnvError` the moment `.env.local`
+exists but isn't loaded. Recommended fix, no new dependency: call Node's built-in
+`process.loadEnvFile(".env.local")` at the top of `prisma.config.ts`, guarded by
+`existsSync` so a machine without the file still behaves. Mention the alternative
+(the `dotenv` package) but recommend the built-in — it is one less dependency for
+identical behaviour.
 
 ---
 
@@ -72,7 +93,7 @@ in the same commit so that no document contradicts this one.
 | Machine setup | ✅ WSL Ubuntu + nvm + Node 26 + pnpm |
 | Next.js scaffold | ✅ Builds, typechecks, lints |
 | `src/lib/dates.ts` | ✅ Written, 15 tests passing. **Do not re-teach it** |
-| Prisma | ⚠️ Installed and configured; no database, no client, no migration |
+| Prisma | ✅ Installed, configured, client generated. **No migration yet** |
 | Database | ❌ Not chosen, not created |
 | Auth | ❌ Not started |
 | App UI | ❌ Still "Hello world!" |
@@ -83,8 +104,10 @@ in the same commit so that no document contradicts this one.
 Commit history, oldest last:
 
 ```
-docs: switch to shipping mode and re-plan at six hours a week   ← this commit
-feat(db): add Prisma schema for Household and User
+docs: record the OAuth session, the WSL workaround and the Prisma state  ← this commit
+chore(deps): approve Prisma build scripts and generate the client
+9befe16 docs: switch to shipping mode and re-plan at six hours a week
+ac066fd feat(db): add Prisma schema for Household and User
 7c28b32 docs: close session 4 with the read-back still open
 85aacc3 docs(learning): record the dates walkthrough and the open read-back
 19eb45d docs(agents): record the owner's learning brief
@@ -143,10 +166,11 @@ new pace. Do not compress two weeks into one to catch up.
 
 ## 5. Next actions, in order
 
-1. Put the database decision to Anthony (§0). Do not build around it.
-2. Create the database, set `DATABASE_URL` in `.env.local`, run the first
-   migration, and confirm the two tables exist.
-3. Install `@prisma/client`, add `db:migrate`, `db:studio`, `db:seed` scripts.
+1. **Thursday morning:** the OAuth client walkthrough (§0.1).
+2. **Thursday evening:** put the database decision to Anthony (§0.2), create the
+   database, fix env loading in `prisma.config.ts`, run the first migration, and
+   confirm the two tables exist.
+3. Add `db:migrate`, `db:studio`, `db:seed` scripts to `package.json`.
 4. Auth.js, app shell, deploy.
 5. When the budget period model is settled, write the period functions with tests.
    Not before.
@@ -189,9 +213,23 @@ Windows has no Node, pnpm or git. Do not run project commands from PowerShell.
 5. **GitHub rejects commits that expose a private email (GH007).** Check
    `git log -1 --format=%ae` before blaming the key. Never make the Gmail public.
 6. **pnpm blocks install scripts** (`allowBuilds` in `pnpm-workspace.yaml`).
-   Prisma needs `prisma`, `@prisma/engines` and `esbuild` approved before the
-   client will generate. That is a security decision: ask Anthony, then add them
-   to `allowBuilds`.
+   Prisma's `prisma`, `@prisma/engines` and `esbuild` are now approved (18 Nov), so
+   installs are clean. Any new package that needs a postinstall will stop the
+   install with `ERR_PNPM_IGNORED_BUILDS` — that is a security decision, so ask
+   Anthony before adding it to `allowBuilds`.
+7. **`cd` into the project fails inside a script.** Discovered 18 Nov: a script
+   run as `wsl -d Ubuntu -- bash /tmp/x.sh` cannot `cd
+   /home/anthony/repos/life-organiser` — it returns ENOENT, while `ls` on the same
+   path succeeds and `cd` works when typed inline. Cause not established; WSL
+   oddity, not a permissions problem. **Workaround:** start the command with
+   `wsl -d Ubuntu --cd /home/anthony/repos/life-organiser -- bash /tmp/x.sh` and
+   have the script guard with `[ -f package.json ]` instead of `cd`.
+8. **Non-interactive shells have no `node`** even with `-i` inconsistencies above.
+   Source nvm inside the script — `export NVM_DIR="$HOME/.nvm";
+   . "$NVM_DIR/nvm.sh"` — rather than depending on the caller.
+9. **Prisma prints a Node support warning on Node 26** ("supports 20.19+, 22.12+,
+   24.0+") during install. It proceeds and the client generates correctly. If a
+   Prisma command misbehaves, that mismatch is the first suspect.
 
 ---
 
@@ -215,8 +253,13 @@ Lean on this rather than re-deriving it.
   `prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script`
   produces the exact SQL the first migration will contain. `pnpm typecheck`,
   `pnpm lint` and `pnpm test` (15 tests) all pass.
-- **Not done, deliberately:** no database, no `@prisma/client`, no generated
-  client, no migration, no `.env.local`. The schema is committed as text only.
+- **Second pass, same night:** Anthony approved the three install scripts
+  (`prisma`, `@prisma/engines`, `esbuild`) and they are recorded in
+  `pnpm-workspace.yaml` with the date and the reason. `@prisma/client@7.10.1` was
+  installed as a runtime dependency, and `prisma generate` now succeeds in ~40ms.
+- **Not done, deliberately:** no database, no migration, no `.env.local`. The
+  client is generated from the schema, but nothing is connected and nothing has
+  been written to a database.
 
 ---
 

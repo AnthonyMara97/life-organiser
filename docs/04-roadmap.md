@@ -70,8 +70,9 @@ it yet.
 2. **Auth.** Auth.js with Google; `ALLOWED_EMAILS` allowlist enforced in the
    `signIn` callback; sign-in works for two emails and rejects a third.
 
-   *Anthony's own task, before this session: create the Google Cloud OAuth client
-   — project, consent screen, redirect URIs. Screenshot each step.*
+   *The OAuth client is Anthony's to create. A morning session on Thursday 19 Nov
+   walks him through it: project, consent screen, redirect URIs, and where each
+   value goes. Screenshot each step so it is repeatable.*
 3. **Shell.** Sidebar on desktop, bottom tabs on phone, placeholder dashboard;
    sign-in page that works at 390px.
 4. **Deploy.** Vercel project connected to the GitHub repo, environment variables
