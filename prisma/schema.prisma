@@ -1,0 +1,49 @@
+// Life Organiser — database schema.
+//
+// Deliberately small: only the two models Week 1 needs. Everything else arrives
+// with its own milestone, so the migration history stays readable and each
+// change can be explained.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7 keeps the connection URL out of this file: it lives in
+// prisma.config.ts for the CLI, and is passed to the client as an adapter at
+// runtime. Same database, two consumers, one source of truth.
+datasource db {
+  provider = "postgresql"
+}
+
+/// `member` can read and write. `demo` is read-only and seeded for the public
+/// deployment. The check happens server-side; the UI never decides access.
+enum Role {
+  member
+  demo
+}
+
+/// Exactly one row in v1. The table exists so that nothing in the code is
+/// hard-coded to "the household" — the day a second one appears, the schema
+/// already supports it.
+model Household {
+  id        String   @id @default(cuid(2))
+  name      String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  users User[]
+}
+
+model User {
+  id          String    @id @default(cuid(2))
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id])
+  email       String    @unique
+  name        String?
+  image       String?
+  role        Role      @default(member)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+
+  // Every read in this app will filter by household, so the column is indexed
+  // from the first migration rather than after the first slow query.
+  @@index([householdId])
+}

@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...except the template, which holds names only and must be in git so a fresh
+# clone knows which variables to set.
+!.env.example
 
 # vercel
 .vercel
