@@ -62,6 +62,10 @@ scaffold, `.env.example`, app builds and tests. Prisma 7 is installed and the
 `Household` + `User` schema is committed — validated, but with no database behind
 it yet.
 
+**19 Nov:** the Google OAuth client exists in Testing status with one test user,
+and the sequence is recorded at `docs/reference/oauth-setup.md`. `next-auth`
+itself is not installed yet.
+
 **Build — in hourly sessions**
 
 1. **Database.** Choose Neon or Docker (`docs/07-handover.md` §0), create it, put
@@ -70,9 +74,8 @@ it yet.
 2. **Auth.** Auth.js with Google; `ALLOWED_EMAILS` allowlist enforced in the
    `signIn` callback; sign-in works for two emails and rejects a third.
 
-   *The OAuth client is Anthony's to create. A morning session on Thursday 19 Nov
-   walks him through it: project, consent screen, redirect URIs, and where each
-   value goes. Screenshot each step so it is repeatable.*
+   *✅ Created 19 Nov, in Testing status — see `docs/reference/oauth-setup.md`.
+   The production redirect URI is added once the Vercel project exists.*
 3. **Shell.** Sidebar on desktop, bottom tabs on phone, placeholder dashboard;
    sign-in page that works at 390px.
 4. **Deploy.** Vercel project connected to the GitHub repo, environment variables

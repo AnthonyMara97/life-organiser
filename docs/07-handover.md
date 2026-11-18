@@ -5,26 +5,34 @@
 > first actions to take. It is a working document, not a permanent record — rewrite
 > it at the close of each session.
 >
-> **Last updated:** 18 November 2026, end of session 5 (second pass).
-> **Next session:** Thursday 19 November — a morning session on the Google Cloud
-> OAuth client, then the usual one-hour session in the evening. Starts at §0.
+> **Last updated:** 19 November 2026, end of the morning session (OAuth client).
+> **Next session:** Thursday 19 November, evening — one hour. Starts at §0.2.
 > Confirm the repo state with `git status -sb` before anything else.
 
 ---
 
 ## 0. Start here
 
-### 0.1 Thursday morning — Google Cloud OAuth client (Anthony's request)
+### 0.1 Thursday morning — the OAuth client (done)
 
-He asked for a walkthrough of creating the OAuth client. **Walk him through it**:
-Cloud project, OAuth consent screen, credentials, redirect URIs for localhost and
-Vercel, then where each value goes in `.env.local`.
+Created 19 Nov by Anthony, walked through step by step. The repeatable sequence is
+now `docs/reference/oauth-setup.md`; read that rather than re-deriving it.
 
-This is operational, not a coding lesson — it fits the current brief. Have him
-drive; do not create the credentials for him. Screenshot each step into the repo
-**only if the screenshots contain no account identifiers**.
+Recorded state: web client `Life Organiser web`; External audience; Publishing
+status **Testing**; one test user; no scopes added; AI-agent checkbox unticked;
+redirect URI `http://localhost:3000/api/auth/callback/google`. Client ID, client
+secret and a locally generated `AUTH_SECRET` are in `.env.local` (uncommitted,
+mode 600). `ALLOWED_EMAILS` holds one of the two addresses.
 
-### 0.2 Thursday evening — one decision blocks everything
+Still owed from this thread: a Google Account for his wife, created from her
+existing Outlook address, then that address added **both** as a Google test user
+and to `ALLOWED_EMAILS`. No screenshots were taken; the written runbook is the
+record, and that is sufficient.
+
+Consequence to remember: `.env.local` exists without `DATABASE_URL`, so every
+`prisma` CLI command now fails with `PrismaConfigEnvError` until §0.2 is done.
+
+### 0.2 Tonight — one decision blocks everything
 
 **The database has nowhere to run.** Do not write code before this is settled: it
 blocks the first migration, the Prisma client, Auth.js and the deploy.
@@ -50,7 +58,7 @@ Once he answers, the order is: create the database → put the connection string
 
 **Before that migration runs, one small thing must be fixed.** Prisma 7 does not
 load `.env.local` by itself, and `prisma.config.ts` calls `env("DATABASE_URL")`
-eagerly, so the CLI will fail with `PrismaConfigEnvError` the moment `.env.local`
+eagerly, so the CLI fails with `PrismaConfigEnvError` the moment `.env.local`
 exists but isn't loaded. Recommended fix, no new dependency: call Node's built-in
 `process.loadEnvFile(".env.local")` at the top of `prisma.config.ts`, guarded by
 `existsSync` so a machine without the file still behaves. Mention the alternative
@@ -95,7 +103,8 @@ in the same commit so that no document contradicts this one.
 | `src/lib/dates.ts` | ✅ Written, 15 tests passing. **Do not re-teach it** |
 | Prisma | ✅ Installed, configured, client generated. **No migration yet** |
 | Database | ❌ Not chosen, not created |
-| Auth | ❌ Not started |
+| Google OAuth client | ✅ Created 19 Nov, Publishing status Testing. Values in `.env.local` |
+| Auth.js itself | ❌ Not installed, not started |
 | App UI | ❌ Still "Hello world!" |
 | Deployment | ❌ Not started |
 | GitHub remote | ✅ Public, `github.com/AnthonyMara97/life-organiser` |
@@ -104,8 +113,10 @@ in the same commit so that no document contradicts this one.
 Commit history, oldest last:
 
 ```
-docs: record the OAuth session, the WSL workaround and the Prisma state  ← this commit
-chore(deps): approve Prisma build scripts and generate the client
+docs: close the OAuth morning session and point at the database decision  ← this commit
+docs(auth): record the OAuth client runbook and env names
+3517a31 docs: record the OAuth session, the WSL workaround and the Prisma state
+915dfe5 chore(deps): approve Prisma build scripts and generate the client
 9befe16 docs: switch to shipping mode and re-plan at six hours a week
 ac066fd feat(db): add Prisma schema for Household and User
 7c28b32 docs: close session 4 with the read-back still open
@@ -129,7 +140,7 @@ bedbf8e docs: add initial project documentation
 ## 3. This week's plan — Thursday 19 to Sunday 22 November
 
 Six hours a week: one hour on each weeknight, thirty minutes on each weekend day.
-Tonight (Wednesday) is spent. Three hours remain this week.
+Three hours remain this week.
 
 | When | Hour | Goal |
 |---|---|---|
@@ -138,9 +149,10 @@ Tonight (Wednesday) is spent. Three hours remain this week.
 | **Sat 21** | 30m | App shell and a sign-in page that renders on a 390px phone |
 | **Sun 22** | 30m | Deploy to Vercel, sign in from a phone |
 
-**Anthony's own task before Friday:** create the Google Cloud OAuth client
-(project, consent screen, redirect URIs). It is his to create — an agent cannot.
-Allow 15 minutes of clicking, and screenshot each step so it is repeatable.
+**Anthony's own task before Friday:** ✅ done 19 Nov, in the morning — the OAuth
+client exists, in Testing status. Outstanding: his wife's Google Account (created
+from her Outlook address), then her address added as a test user and to
+`ALLOWED_EMAILS`.
 
 **At risk:** Week 1's acceptance test — signing in from a phone on the deployed
 URL — may land on Monday rather than Sunday at 3 hours. That is acceptable at this
@@ -150,7 +162,7 @@ new pace. Do not compress two weeks into one to catch up.
 
 ## 4. Decisions still open — ask before coding
 
-1. **The database** (§0). Blocks Thursday entirely.
+1. **The database** (§0.2). Blocks tonight entirely.
 2. **Budget period model.** Fortnightly, monthly, or two-tier. Blocks the period
    functions and Week 2. `BudgetPeriod` is still marked `(proposed)` in
    `docs/03-architecture.md` and must stay that way.
@@ -161,18 +173,29 @@ new pace. Do not compress two weeks into one to catch up.
    detail.
 4. **Two-tier ledger** (`needs_review` vs `confirmed`) and **savings-goal-as-P0** —
    still unconfirmed from earlier sessions.
+5. **Auth.js dependency and its version.** Required before Friday. Next.js 16 and
+   React 19 mean the v5 line, which is still published as a beta. The environment
+   variable names already in `.env.example` assume v5 and are marked `(proposed)`
+   until Anthony approves the package.
 
 ---
 
 ## 5. Next actions, in order
 
-1. **Thursday morning:** the OAuth client walkthrough (§0.1).
-2. **Thursday evening:** put the database decision to Anthony (§0.2), create the
-   database, fix env loading in `prisma.config.ts`, run the first migration, and
-   confirm the two tables exist.
-3. Add `db:migrate`, `db:studio`, `db:seed` scripts to `package.json`.
-4. Auth.js, app shell, deploy.
-5. When the budget period model is settled, write the period functions with tests.
+1. **Tonight, first:** put the database decision to Anthony (§0.2). Nothing else
+   starts before he answers.
+2. Then create the database, put the connection string in `.env.local`, fix env
+   loading in `prisma.config.ts` (`process.loadEnvFile`, guarded by `existsSync`),
+   run `pnpm exec prisma migrate dev --name init`, and confirm `Household` and
+   `User` exist.
+3. Add `db:migrate`, `db:studio` and `db:seed` scripts to `package.json`.
+4. **Friday:** ask about the `next-auth` dependency and version (§4.5) before
+   installing. Then the `signIn` callback, the allowlist and the sign-in page.
+5. When his wife's Google Account exists: add the address as a Google test user
+   **and** to `ALLOWED_EMAILS`. The two lists are separate on purpose.
+6. App shell, then deploy; add the production redirect URI to the OAuth client at
+   that point.
+7. When the budget period model is settled, write the period functions with tests.
    Not before.
 
 ---
@@ -230,10 +253,38 @@ Windows has no Node, pnpm or git. Do not run project commands from PowerShell.
 9. **Prisma prints a Node support warning on Node 26** ("supports 20.19+, 22.12+,
    24.0+") during install. It proceeds and the client generates correctly. If a
    Prisma command misbehaves, that mismatch is the first suspect.
+10. **PowerShell 5.1 rejects `&&`** as a statement separator, and expands `$` in
+    double-quoted arguments before WSL ever sees them. Discovered 19 Nov. Run one
+    command per call, or write the script to a Windows temp path and run
+    `tr -d '\r' < /mnt/c/…/x.sh > /tmp/x.sh && bash /tmp/x.sh` inside WSL.
 
 ---
 
-## 7. What was actually done on 18 November
+## 7. What was actually done
+
+### 19 November — morning (OAuth client)
+
+- Google Cloud project `life-organiser` created; Google Auth Platform configured
+  with app name **Life Organiser**, External audience, Publishing status
+  **Testing**, and one test user.
+- OAuth client `Life Organiser web`, type **Web application**, redirect URI
+  `http://localhost:3000/api/auth/callback/google`, JavaScript origins empty. The
+  AI-agent checkbox was deliberately left unticked (§2 of the runbook explains
+  why).
+- No scopes added and no APIs enabled. Sign-in only needs `openid email profile`,
+  which Auth.js requests at runtime; adding scopes here is what would trigger
+  verification.
+- `.env.local` created from `.env.example`: `AUTH_GOOGLE_ID`,
+  `AUTH_GOOGLE_SECRET` (35 chars, `GOCSPX-` prefix) and a generated
+  `AUTH_SECRET` (44 chars) verified by shape only — no value was ever printed.
+  `ALLOWED_EMAILS` holds one address; the second is pending a Google Account.
+- `.env.example` now documents all four names, marked `(proposed)` because the
+  Auth.js dependency is not yet approved. `docs/reference/oauth-setup.md` records
+  the whole sequence, including the failure modes.
+- **Not done, deliberately:** no `next-auth` installed, no auth code, no sign-in
+  page, no production redirect URI (no Vercel domain yet), no screenshots.
+
+### 18 November
 
 Lean on this rather than re-deriving it.
 
@@ -296,9 +347,15 @@ brief. It was a learning task.
 
 ## 10. The session's architectural concept
 
-Session 5's concept: **the schema is the source of truth, and the migration it
-generates is versioned SQL you commit** — Prisma only translates one into the
-other, and in Prisma 7 the *shape* of the data lives in the schema while the
-*connection* lives in `prisma.config.ts`.
+**Morning, 19 Nov:** *configuration is an input to the system, not part of it.*
+The OAuth client, its secret and the allowlist live outside the code; the code
+reads names at start-up. That is why replacing the client costs two lines in a
+gitignored file and no code change.
 
-Session 6 should name its own, in one or two sentences, in §10 of its rewrite.
+Session 5's concept, for reference: the schema is the source of truth and the
+migration it generates is versioned SQL you commit — Prisma only translates one
+into the other, and in Prisma 7 the *shape* of the data lives in the schema while
+the *connection* lives in `prisma.config.ts`.
+
+Tonight's session should name its own concept, in one or two sentences, in §10 of
+its rewrite.
