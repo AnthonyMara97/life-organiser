@@ -1,3 +1,11 @@
+# pnpm blocks install scripts by default: postinstall code runs arbitrary
+# commands, so each package that needs one is approved explicitly.
+#
+# Approved 18 Nov 2026 for Prisma: it downloads the query engine and generates
+# the typed client. Reversing is setting these back to false.
 allowBuilds:
   sharp: false
   unrs-resolver: false
+  prisma: true
+  "@prisma/engines": true
+  esbuild: true
