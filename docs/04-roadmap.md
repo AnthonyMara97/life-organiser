@@ -58,19 +58,21 @@ Every week has the same six parts:
 **Focus:** get a deployed, authenticated, empty app in front of you.
 
 **Already done** (sessions 1–5): repo, pnpm, Next.js + TypeScript + Tailwind
-scaffold, `.env.example`, app builds and tests. Prisma 7 is installed and the
-`Household` + `User` schema is committed — validated, but with no database behind
-it yet.
+scaffold, `.env.example`, app builds and tests. Prisma 7 is installed, and the
+`Household` + `User` schema is committed **and migrated onto Neon** — both tables
+exist in the dev database.
 
 **19 Nov:** the Google OAuth client exists in Testing status with one test user,
 and the sequence is recorded at `docs/reference/oauth-setup.md`. `next-auth`
-itself is not installed yet.
+itself is not installed yet. In the evening the Neon dev project was created
+(Sydney), the first migration was applied, and `db:migrate` / `db:studio` became
+scripts.
 
 **Build — in hourly sessions**
 
-1. **Database.** Choose Neon or Docker (`docs/07-handover.md` §0), create it, put
-   `DATABASE_URL` in `.env.local`, install `@prisma/client`, run the first
-   migration. Two tables exist.
+1. **Database.** ✅ **Done 19 Nov (Neon, Sydney).** `DATABASE_URL` is in
+   `.env.local`; migration `20261119044104_init` is applied; `Household`, `User`
+   and the `Role` enum exist. Verified by introspecting the database back.
 2. **Auth.** Auth.js with Google; `ALLOWED_EMAILS` allowlist enforced in the
    `signIn` callback; sign-in works for two emails and rejects a third.
 

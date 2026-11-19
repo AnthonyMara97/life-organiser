@@ -368,7 +368,7 @@ coverage.
 
 | Environment | App | Database | Data |
 |---|---|---|---|
-| Local | `pnpm dev` | Docker Postgres or a Neon dev branch | Seeded demo household |
+| Local | `pnpm dev` | Neon dev project (Sydney), direct connection | Seeded demo household |
 | Preview | Vercel preview per branch | Neon branch (optional) | Seeded demo household |
 | Production | Vercel | Neon production | Real household, writes enabled |
 
@@ -392,14 +392,13 @@ production promotion. Never edit a migration that has been applied.
 | 2026-11-16 | Component caching off (`cacheComponents`, `partialPrefetching`) | Fresh data while learning; stale data mimics a bug | Leave defaults on; learn caching deliberately later |
 | 2026-11-16 | `@types/node` tracks the runtime (^26) | The compiler should describe the machine it runs on | Leave at ^20 |
 | 2026-11-16 | Calendar days are ISO strings, arithmetic in `src/lib/dates.ts` | A day has no time or timezone; strings make the month-boundary bug impossible and tests readable | `Date` at UTC midnight; a wrapper class |
+| 2026-11-19 | Neon for the dev database as well as production; the CLI uses the **direct** connection | One provider, so local and deployed behave the same. Migrations cannot run through a pooled connection, so pooling is a deploy-time concern | Docker Postgres locally; deferred to a session of its own |
 
 ## 13. Open technical questions
 
-1. Docker for local Postgres, or a Neon dev branch from day one? (Neon is less to
-   install; Docker teaches the local-dev workflow employers use.)
-2. Does the bank export a single CSV or one per account? Affects the import
+1. Does the bank export a single CSV or one per account? Affects the import
    mapping UI.
-3. Push notifications: Web Push via service worker, or email only? Deferred, but
+2. Push notifications: Web Push via service worker, or email only? Deferred, but
    the PWA decision affects it.
-4. Realtime between two devices (grocery list, Phase 3): polling, Supabase
+3. Realtime between two devices (grocery list, Phase 3): polling, Supabase
    Realtime, or server-sent events? Decide when that phase starts.

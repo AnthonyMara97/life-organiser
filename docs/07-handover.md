@@ -5,91 +5,79 @@
 > first actions to take. It is a working document, not a permanent record — rewrite
 > it at the close of each session.
 >
-> **Last updated:** 19 November 2026, end of the morning session (OAuth client).
-> **Next session:** Thursday 19 November, evening — one hour. Starts at §0.2.
+> **Last updated:** 19 November 2026, end of the evening session (first migration).
+> **Next session:** Friday 20 November, evening — one hour. Starts at §0.1.
 > Confirm the repo state with `git status -sb` before anything else.
 
 ---
 
 ## 0. Start here
 
-### 0.1 Thursday morning — the OAuth client (done)
+### 0.1 Friday: two decisions before any auth code
 
-Created 19 Nov by Anthony, walked through step by step. The repeatable sequence is
-now `docs/reference/oauth-setup.md`; read that rather than re-deriving it.
+Both are blocking. Neither has been agreed, so neither is in the repo.
 
-Recorded state: web client `Life Organiser web`; External audience; Publishing
-status **Testing**; one test user; no scopes added; AI-agent checkbox unticked;
-redirect URI `http://localhost:3000/api/auth/callback/google`. Client ID, client
-secret and a locally generated `AUTH_SECRET` are in `.env.local` (uncommitted,
-mode 600). `ALLOWED_EMAILS` holds one of the two addresses.
+**Decision A — the Auth.js dependency.** `next-auth` is the first dependency since
+Prisma, and it is still published as a **beta** on the v5 line.
 
-Still owed from this thread: a Google Account for his wife, created from her
-existing Outlook address, then that address added **both** as a Google test user
-and to `ALLOWED_EMAILS`. No screenshots were taken; the written runbook is the
-record, and that is sufficient.
+- **v5 beta, pinned to an exact version** (recommended). It is what Next.js 16 and
+  React 19 are built against; the v4 line does not support the App Router. Pin it
+  so a beta release cannot change behaviour under us.
+- v4. Rejected on compatibility: the App Router integration is the thing v5 exists
+  to provide.
+- Hand-rolled sessions with signed cookies. More code to own, and the sign-in
+  redirect flow with Google is fiddly to get right; not worth it for two users.
 
-Consequence to remember: `.env.local` exists without `DATABASE_URL`, so every
-`prisma` CLI command now fails with `PrismaConfigEnvError` until §0.2 is done.
+Cost to reverse: a version bump, or a swap to another library — the session cookie
+format is the only thing that changes, and there is no production data yet.
+What could go wrong: a beta breaking change mid-week. Mitigation is the pin.
 
-### 0.2 Tonight — one decision blocks everything
+**Decision B — how a signed-in person becomes a `User` row.** The architecture
+specifies JWT sessions and a `User` row created on first sign-in, with no Prisma
+adapter and therefore no `Account` / `Session` tables.
 
-**The database has nowhere to run.** Do not write code before this is settled: it
-blocks the first migration, the Prisma client, Auth.js and the deploy.
+- **JWT + `User` row on first sign-in** (recommended). Two tables instead of four,
+  and nothing about our data is in Google's shape.
+- Prisma adapter (conventional). Adds `Account` and `Session` tables and a
+  dependency; useful for refresh tokens we do not need for sign-in only.
 
-Put the choice to Anthony in exactly these terms, then stop and wait.
+Cost to reverse: adding the adapter later is a migration plus backfilling
+`Account` rows on next sign-in. Cheap while there are two users.
 
-| | Neon dev branch | Docker Postgres |
-|---|---|---|
-| What it is | Hosted Postgres, free tier | Postgres in a container on his laptop |
-| Time to first query | ~5 minutes | 20–40 minutes, possible WSL restart |
-| Production parity | Same provider as production (architecture §11) | A second setup to maintain |
-| Offline | Needs internet; sleeps when idle | Works offline |
-| Learning value | Branching, pooling | Containers, volumes, ports |
-| Cost to reverse | Change `DATABASE_URL`, re-seed | `pg_dump` and restore once real data exists |
+**A sub-question that follows: which household does the first user join?** `User`
+has a non-null `householdId`, and v1 has exactly one `Household` row. Nothing
+creates it yet. Options: the seed script creates the household (and the app
+assumes it exists); or the first sign-in creates one if none exists. This is a
+data-model decision — ask, do not choose. It must be settled before the code that
+provisions users is written.
 
-**Recommendation to give him: Neon.** Production is Neon either way, so Docker
-means running two different database setups and meeting the differences on the
-deployed app. Docker is worth a deliberate session of its own — not tonight's
-only hour.
+### 0.2 Still open, and needed before Week 2
 
-Once he answers, the order is: create the database → put the connection string in
-`.env.local` (never in chat) → `pnpm exec prisma migrate dev --name init`.
+**The budget period model** — fortnightly, monthly, or two-tier. Blocks the period
+functions. `BudgetPeriod` stays marked `(proposed)` in `docs/03-architecture.md`
+until Anthony confirms.
 
-**Before that migration runs, one small thing must be fixed.** Prisma 7 does not
-load `.env.local` by itself, and `prisma.config.ts` calls `env("DATABASE_URL")`
-eagerly, so the CLI fails with `PrismaConfigEnvError` the moment `.env.local`
-exists but isn't loaded. Recommended fix, no new dependency: call Node's built-in
-`process.loadEnvFile(".env.local")` at the top of `prisma.config.ts`, guarded by
-`existsSync` so a machine without the file still behaves. Mention the alternative
-(the `dotenv` package) but recommend the built-in — it is one less dependency for
-identical behaviour.
+**Two-tier ledger** (`needs_review` vs `confirmed`) and **savings-goal-as-P0** —
+also unconfirmed from earlier sessions.
 
 ---
 
 ## 1. What changed on 18 November: the working mode
 
-**This is the most important section for a new agent.** The project's purpose has
-been narrowed, by Anthony, and the standing rules were rewritten to match.
+**This is the most important section for a new agent.**
 
 - The project is now a **shipping project**. It builds a real household app, and
   it teaches **software architecture** — how the pieces fit and why.
 - **It no longer teaches coding.** No syntax lessons, no walkthroughs, no
-  read-backs, no "explain it back". He learns fundamentals on his own time and
-  asked specifically that this repo not be used as a tutorial.
+  read-backs. Anthony learns fundamentals on his own time and asked specifically
+  that this repo not be a tutorial.
 - **One architectural concept per session**, two or three sentences, tied to the
-  code in front of him. Explanations on request. That is the only teaching.
-- **He reviews every commit first.** Show the overview in chat, wait, then commit.
-  Budget up to 20 minutes on top of the session.
-- **The `dates.ts` read-back gate is dead.** It was created to prove comprehension
-  and is withdrawn along with the teaching brief. Both failed attempts (17 and 18
-  Nov) are recorded in the frozen learning log; nothing further is owed. Do not
-  re-open it, and do not re-explain `dates.ts`.
-- The 17 Nov learning brief is withdrawn. Full wording of the new brief is in
-  `AGENTS.md` → "What the owner is optimising for (revised 18 Nov 2026)".
+  code in front of him. Explanations on request.
+- **He reviews every commit first.** Overview in chat, wait, then commit.
+- The `dates.ts` read-back gate is dead. Do not re-open it, and do not re-explain
+  `dates.ts`.
 
-`AGENTS.md`, `docs/05-working-agreement.md` and `docs/04-roadmap.md` were updated
-in the same commit so that no document contradicts this one.
+`AGENTS.md` holds the full wording. `docs/06-learning-log.md` is frozen.
 
 ---
 
@@ -99,108 +87,74 @@ in the same commit so that no document contradicts this one.
 |---|---|
 | Planning documents | ✅ Written, reviewed, committed |
 | Machine setup | ✅ WSL Ubuntu + nvm + Node 26 + pnpm |
-| Next.js scaffold | ✅ Builds, typechecks, lints |
-| `src/lib/dates.ts` | ✅ Written, 15 tests passing. **Do not re-teach it** |
-| Prisma | ✅ Installed, configured, client generated. **No migration yet** |
-| Database | ❌ Not chosen, not created |
-| Google OAuth client | ✅ Created 19 Nov, Publishing status Testing. Values in `.env.local` |
+| Next.js scaffold | ✅ Builds, typechecks, lints, 15 tests |
+| `src/lib/dates.ts` | ✅ Written, tested. **Do not re-teach it** |
+| Prisma | ✅ 7.10.1, client generated, CLI loads `.env.local` |
+| Database | ✅ Neon dev project, Sydney. Migration applied |
+| Google OAuth client | ✅ Created 19 Nov, Publishing status Testing |
 | Auth.js itself | ❌ Not installed, not started |
 | App UI | ❌ Still "Hello world!" |
 | Deployment | ❌ Not started |
-| GitHub remote | ✅ Public, `github.com/AnthonyMara97/life-organiser` |
-| Roadmap | ✅ Re-planned 18 Nov: 6 hours/week, 16 weeks |
+| GitHub remote | ✅ `github.com/AnthonyMara97/life-organiser` |
+| Roadmap | ✅ 6 hours/week, 16 weeks |
 
 Commit history, oldest last:
 
 ```
-docs: close the OAuth morning session and point at the database decision  ← this commit
-docs(auth): record the OAuth client runbook and env names
+cd5f0f0 feat(db): apply the initial migration to Neon   ← pushed
+753cbfb docs: close the OAuth morning session and point at the database decision
+3c6c403 docs(auth): record the OAuth client runbook and env names
 3517a31 docs: record the OAuth session, the WSL workaround and the Prisma state
 915dfe5 chore(deps): approve Prisma build scripts and generate the client
 9befe16 docs: switch to shipping mode and re-plan at six hours a week
 ac066fd feat(db): add Prisma schema for Household and User
 7c28b32 docs: close session 4 with the read-back still open
-85aacc3 docs(learning): record the dates walkthrough and the open read-back
-19eb45d docs(agents): record the owner's learning brief
-acf2d33 docs: make the date read-back the first action next session
-d4e58b7 docs: record the first push and the email privacy fix
-ba47563 docs: record session 3 decisions and close the handover
 6d970ca feat(dates): add calendar-day helpers with tests
-0266bc5 chore(test): add Vitest and test scripts
-c374304 docs(scope): replace Google Drive import with in-app CSV upload
-c755208 chore(next): disable component caching while learning
-0b5c904 chore(deps): bump @types/node to match the Node 26 runtime
-6f90e98 docs: add session handover and record today's setup work
 5642bbe chore: scaffold Next.js application
-bedbf8e docs: add initial project documentation
 ```
 
 ---
 
 ## 3. This week's plan — Thursday 19 to Sunday 22 November
 
-Six hours a week: one hour on each weeknight, thirty minutes on each weekend day.
-Three hours remain this week.
+Two hours remain this week (Friday 1h, Saturday 30m, Sunday 30m).
 
 | When | Hour | Goal |
 |---|---|---|
-| **Thu 19** | 1h | Database decision, then the first migration. Concept: **the schema is the source of truth, and a migration is versioned SQL that you commit** |
+| ~~Thu 19~~ | ~~1h~~ | ✅ Database decision, Neon created, first migration applied |
 | **Fri 20** | 1h | Auth.js with Google and the `ALLOWED_EMAILS` allowlist. Concept: **the server decides who is allowed in; the client only asks** |
 | **Sat 21** | 30m | App shell and a sign-in page that renders on a 390px phone |
 | **Sun 22** | 30m | Deploy to Vercel, sign in from a phone |
 
-**Anthony's own task before Friday:** ✅ done 19 Nov, in the morning — the OAuth
-client exists, in Testing status. Outstanding: his wife's Google Account (created
-from her Outlook address), then her address added as a test user and to
-`ALLOWED_EMAILS`.
+**Anthony's own task:** his wife's Google Account, created from her Outlook
+address, then that address added **both** as a Google test user and to
+`ALLOWED_EMAILS`. The two lists are separate on purpose. Not blocking Friday's
+build — only the two-person acceptance test.
 
-**At risk:** Week 1's acceptance test — signing in from a phone on the deployed
-URL — may land on Monday rather than Sunday at 3 hours. That is acceptable at this
-new pace. Do not compress two weeks into one to catch up.
-
----
-
-## 4. Decisions still open — ask before coding
-
-1. **The database** (§0.2). Blocks tonight entirely.
-2. **Budget period model.** Fortnightly, monthly, or two-tier. Blocks the period
-   functions and Week 2. `BudgetPeriod` is still marked `(proposed)` in
-   `docs/03-architecture.md` and must stay that way.
-3. **Sign-in user provisioning.** Auth.js normally ships a Prisma adapter with
-   `Account` and `Session` tables. The architecture specifies JWT sessions and a
-   `User` row created on first sign-in, which needs no adapter. Confirm the
-   approach before implementing — it is a data-model decision, not execution
-   detail.
-4. **Two-tier ledger** (`needs_review` vs `confirmed`) and **savings-goal-as-P0** —
-   still unconfirmed from earlier sessions.
-5. **Auth.js dependency and its version.** Required before Friday. Next.js 16 and
-   React 19 mean the v5 line, which is still published as a beta. The environment
-   variable names already in `.env.example` assume v5 and are marked `(proposed)`
-   until Anthony approves the package.
+**At risk:** Week 1's acceptance test may land on Monday rather than Sunday.
+Acceptable at this pace. Do not compress two weeks into one to catch up.
 
 ---
 
-## 5. Next actions, in order
+## 4. Next actions, in order
 
-1. **Tonight, first:** put the database decision to Anthony (§0.2). Nothing else
-   starts before he answers.
-2. Then create the database, put the connection string in `.env.local`, fix env
-   loading in `prisma.config.ts` (`process.loadEnvFile`, guarded by `existsSync`),
-   run `pnpm exec prisma migrate dev --name init`, and confirm `Household` and
-   `User` exist.
-3. Add `db:migrate`, `db:studio` and `db:seed` scripts to `package.json`.
-4. **Friday:** ask about the `next-auth` dependency and version (§4.5) before
-   installing. Then the `signIn` callback, the allowlist and the sign-in page.
-5. When his wife's Google Account exists: add the address as a Google test user
-   **and** to `ALLOWED_EMAILS`. The two lists are separate on purpose.
-6. App shell, then deploy; add the production redirect URI to the OAuth client at
-   that point.
-7. When the budget period model is settled, write the period functions with tests.
-   Not before.
+1. **Friday, first:** put Decision A and Decision B to Anthony (§0.1). Nothing
+   installed or written before he answers.
+2. Install `next-auth` at the pinned version. The environment variable names in
+   `.env.example` are already v5-shaped and marked `(proposed)` — remove the
+   markers in the same commit.
+3. The `signIn` callback, the allowlist and the sign-in page.
+4. Settle the household bootstrap (§0.1), then the provisioning code.
+5. App shell; deploy; add the **production** redirect URI to the OAuth client at
+   that point, and the pooled Neon connection string as a Vercel env var.
+6. When the budget period model is settled, write the period functions with tests.
+7. When a demo household exists, add `db:seed` to `package.json` — deliberately
+   absent now, because a script pointing at a file that does not exist is worse
+   than no script.
 
 ---
 
-## 6. The machine, as it actually is
+## 5. The machine, as it actually is
 
 Everything lives inside Ubuntu, not Windows.
 
@@ -213,124 +167,115 @@ Everything lives inside Ubuntu, not Windows.
 | pnpm | 12.21.0 · npm 11.20.0 · nvm v0.41.0 · git 2.55.0 |
 | git identity | `AnthonyMara97`; repo overrides email to the GitHub no-reply address |
 | GitHub CLI | ❌ Not installed |
-| Docker / `psql` / `neonctl` | ❌ Not installed (checked 17 Nov) |
+| Docker / `psql` / `neonctl` | ❌ Not installed |
 | SSH key | `~/.ssh/id_ed25519`, **passphrase-protected** |
 | Remote | `git@github.com:AnthonyMara97/life-organiser.git` (public) |
 
-Windows has no Node, pnpm or git. Do not run project commands from PowerShell.
+### The database
+
+| Thing | Value |
+|---|---|
+| Provider | Neon, free tier, project `life-organiser` |
+| Region | AWS `ap-southeast-2` (Sydney) |
+| Database / role | `neondb` / `neondb_owner` |
+| Connection used | **Direct** (host has no `-pooler`), `sslmode=require` |
+| Where it lives | `DATABASE_URL` in `.env.local`, mode 600, never committed |
+| Migration | `prisma/migrations/20261119044104_init` — applied and verified |
+
+Pooling is deliberately **off** in the dev URL: `prisma migrate` cannot run
+through a pooled connection. At deploy time the app takes the pooled string as a
+Vercel environment variable; serverless functions open too many short-lived
+connections without it.
 
 ### Behaviours that waste time if forgotten
 
 1. **`node` only exists in an interactive shell.** Use
-   `wsl -d Ubuntu -- bash -ic '...'` (`-i`), never `bash -lc` (`-l`).
-2. **PowerShell eats `$?` and inner double quotes.** Long commands lose their
-   quoting; write a short `.sh` into `/tmp` and run `wsl -d Ubuntu -- bash /tmp/x.sh`.
-3. **No SSH agent was running at the close of session 5**, so the push was left to
-   Anthony. To create one:
+   `wsl -d Ubuntu -- bash -ic '...'`, not `bash -lc`.
+2. **PowerShell eats `$?` and inner quotes.** Write a short `.sh` to
+   `/mnt/c/Users/amara/AppData/Local/Temp/opencode/` and run it with
+   `wsl -d Ubuntu --cd /home/anthony/repos/life-organiser -- bash /mnt/c/.../x.sh`.
+   Scripts should `[ -f package.json ]` rather than `cd` (§6, item 7 below).
+3. **No SSH agent runs by default**, so `git push` fails with
+   `Permission denied (publickey)`. Start one and add the key:
    `ssh-agent -a /tmp/ssh-agent.sock`, then
    `SSH_AUTH_SOCK=/tmp/ssh-agent.sock ssh-add ~/.ssh/id_ed25519` (passphrase
-   prompt). The agent dies with the WSL instance.
+   prompt, must be typed by Anthony). **`ssh-add` succeeding is not enough** —
+   the push must also see the socket: `export SSH_AUTH_SOCK=/tmp/ssh-agent.sock`.
+   That was the stumble on 19 Nov. The agent dies with the WSL instance.
 4. **`pnpm build` writes to stderr on success**, and **`pnpm add` prints a red
    `ERR_PNPM_IGNORED_BUILDS` even when the package installs.** Read the exit path,
    not the colour.
-5. **GitHub rejects commits that expose a private email (GH007).** Check
-   `git log -1 --format=%ae` before blaming the key. Never make the Gmail public.
+5. **GitHub rejects commits exposing a private email (GH007).** Check
+   `git log -1 --format=%ae` before blaming the key.
 6. **pnpm blocks install scripts** (`allowBuilds` in `pnpm-workspace.yaml`).
-   Prisma's `prisma`, `@prisma/engines` and `esbuild` are now approved (18 Nov), so
-   installs are clean. Any new package that needs a postinstall will stop the
-   install with `ERR_PNPM_IGNORED_BUILDS` — that is a security decision, so ask
-   Anthony before adding it to `allowBuilds`.
-7. **`cd` into the project fails inside a script.** Discovered 18 Nov: a script
-   run as `wsl -d Ubuntu -- bash /tmp/x.sh` cannot `cd
-   /home/anthony/repos/life-organiser` — it returns ENOENT, while `ls` on the same
-   path succeeds and `cd` works when typed inline. Cause not established; WSL
-   oddity, not a permissions problem. **Workaround:** start the command with
-   `wsl -d Ubuntu --cd /home/anthony/repos/life-organiser -- bash /tmp/x.sh` and
-   have the script guard with `[ -f package.json ]` instead of `cd`.
-8. **Non-interactive shells have no `node`** even with `-i` inconsistencies above.
-   Source nvm inside the script — `export NVM_DIR="$HOME/.nvm";
-   . "$NVM_DIR/nvm.sh"` — rather than depending on the caller.
-9. **Prisma prints a Node support warning on Node 26** ("supports 20.19+, 22.12+,
-   24.0+") during install. It proceeds and the client generates correctly. If a
-   Prisma command misbehaves, that mismatch is the first suspect.
-10. **PowerShell 5.1 rejects `&&`** as a statement separator, and expands `$` in
-    double-quoted arguments before WSL ever sees them. Discovered 19 Nov. Run one
-    command per call, or write the script to a Windows temp path and run
-    `tr -d '\r' < /mnt/c/…/x.sh > /tmp/x.sh && bash /tmp/x.sh` inside WSL.
+   `prisma`, `@prisma/engines` and `esbuild` are approved. A new package needing a
+   postinstall stops the install — that is a security decision, so ask first.
+7. **`cd` inside a script run as `bash /tmp/x.sh` fails** with ENOENT. Use
+   `--cd` on the `wsl` command and guard with `[ -f package.json ]`.
+8. **Non-interactive shells have no `node`.** Source nvm in the script:
+   `export NVM_DIR="$HOME/.nvm"; . "$NVM_DIR/nvm.sh"`.
+9. **Prisma prints a Node support warning on Node 26** during install. It
+   proceeds; if a Prisma command misbehaves, that mismatch is the first suspect.
+10. **PowerShell 5.1 rejects `&&`** and expands `$` in double-quoted arguments.
+    One command per call, or the script-file workaround above.
+11. **Prisma's `env()` treats an empty string as missing**, so a blank
+    `DATABASE_URL=""` fails with `PrismaConfigEnvError`. That is correct behaviour,
+    not a broken loader: `prisma.config.ts` reads `.env.local` through Node's
+    built-in `process.loadEnvFile`, guarded by `existsSync`.
+12. **`.env.local` is the only place the connection string lives.** Do not print
+    it, do not paste it into chat, do not copy it into a command line.
 
 ---
 
-## 7. What was actually done
+## 6. What was actually done
+
+### 19 November — evening (first migration)
+
+- Anthony chose **Neon** over Docker: production is Neon either way, so Docker
+  would mean two database setups and meeting the differences at deploy time.
+  Docker gets its own session later if he wants the container experience.
+- Neon project `life-organiser` created in `ap-southeast-2` (Sydney), on the free
+  tier. The **direct** (non-pooled) connection string went into `.env.local` by
+  Anthony's hand; it was never printed to chat or committed.
+- **`prisma.config.ts`** now calls `process.loadEnvFile(".env.local")` when the
+  file exists. No new dependency — the `dotenv` alternative would add a package
+  for identical behaviour.
+- **`pnpm exec prisma migrate dev --name init`** produced
+  `prisma/migrations/20261119044104_init/migration.sql` and applied it. The SQL
+  creates the `Role` enum, `Household`, `User`, the unique email index, the
+  `householdId` index and the foreign key.
+- **Verified independently:** `prisma migrate status` reports up to date, and
+  `prisma db pull --print` reads the live database back into a schema that matches
+  `prisma/schema.prisma`. The tables are real, not just written down.
+- **`package.json`** gained `db:migrate` and `db:studio`. `db:seed` waits for a
+  seed file.
+- `pnpm typecheck`, `pnpm lint` and `pnpm test` (15 tests) all pass.
+- Committed as `cd5f0f0` and pushed.
 
 ### 19 November — morning (OAuth client)
 
-- Google Cloud project `life-organiser` created; Google Auth Platform configured
-  with app name **Life Organiser**, External audience, Publishing status
-  **Testing**, and one test user.
-- OAuth client `Life Organiser web`, type **Web application**, redirect URI
-  `http://localhost:3000/api/auth/callback/google`, JavaScript origins empty. The
-  AI-agent checkbox was deliberately left unticked (§2 of the runbook explains
-  why).
-- No scopes added and no APIs enabled. Sign-in only needs `openid email profile`,
-  which Auth.js requests at runtime; adding scopes here is what would trigger
-  verification.
-- `.env.local` created from `.env.example`: `AUTH_GOOGLE_ID`,
-  `AUTH_GOOGLE_SECRET` (35 chars, `GOCSPX-` prefix) and a generated
-  `AUTH_SECRET` (44 chars) verified by shape only — no value was ever printed.
-  `ALLOWED_EMAILS` holds one address; the second is pending a Google Account.
-- `.env.example` now documents all four names, marked `(proposed)` because the
-  Auth.js dependency is not yet approved. `docs/reference/oauth-setup.md` records
-  the whole sequence, including the failure modes.
-- **Not done, deliberately:** no `next-auth` installed, no auth code, no sign-in
-  page, no production redirect URI (no Vercel domain yet), no screenshots.
+Condensed; the full sequence is `docs/reference/oauth-setup.md`.
+
+Google Cloud project `life-organiser`; app **Life Organiser**, External audience,
+publishing status **Testing**, one test user, no scopes added, AI-agent checkbox
+unticked. Client `Life Organiser web`, redirect URI
+`http://localhost:3000/api/auth/callback/google`. Client ID, secret and a
+generated `AUTH_SECRET` are in `.env.local`. No `next-auth` installed, no auth
+code, no production redirect URI yet.
 
 ### 18 November
 
-Lean on this rather than re-deriving it.
-
-- **Prisma 7.10.1 installed** as a dev dependency. Deliberate: the registry's
-  `latest` tag currently points at `8.0.0-rc.34`, a release candidate. Stable is
-  pinned. Reversing is a version bump plus deleting `prisma.config.ts`.
-- **`prisma/schema.prisma`** — `Household` and `User`, exactly as
-  `docs/03-architecture.md` §3 specifies, plus the `Role` enum
-  (`member` | `demo`). Locale-dependent timestamps use `@db.Timestamptz(3)`,
-  because Prisma's default `TIMESTAMP(3)` has no timezone and the architecture
-  requires moments in time to be timestamptz.
-- **`prisma.config.ts`** — Prisma 7 removed `url` from the schema. The CLI takes
-  the URL from this file; the app will take a driver adapter instead.
-- **`.env.example`** created, and `.gitignore` fixed: the blanket `.env*` rule was
-  also excluding `.env.example`, which must be committed.
-- **Verified:** `prisma validate` passes, and
-  `prisma migrate diff --from-empty --to-schema prisma/schema.prisma --script`
-  produces the exact SQL the first migration will contain. `pnpm typecheck`,
-  `pnpm lint` and `pnpm test` (15 tests) all pass.
-- **Second pass, same night:** Anthony approved the three install scripts
-  (`prisma`, `@prisma/engines`, `esbuild`) and they are recorded in
-  `pnpm-workspace.yaml` with the date and the reason. `@prisma/client@7.10.1` was
-  installed as a runtime dependency, and `prisma generate` now succeeds in ~40ms.
-- **Not done, deliberately:** no database, no migration, no `.env.local`. The
-  client is generated from the schema, but nothing is connected and nothing has
-  been written to a database.
+- **Prisma 7.10.1** pinned (registry `latest` is an 8.0 release candidate).
+- `prisma/schema.prisma`: `Household`, `User`, `Role`; timestamps are
+  `@db.Timestamptz(3)` so moments in time carry a timezone.
+- `prisma.config.ts` created because Prisma 7 removed `url` from the schema
+  block: the CLI reads the URL from the config, the app will use a driver adapter.
+- `.gitignore` fixed so `.env.example` is committable while `.env.local` is not.
+- Prisma build scripts approved in `pnpm-workspace.yaml` with date and reason.
 
 ---
 
-## 8. The scaffold, recorded honestly
-
-`create-next-app` produced 11 files. The template `README.md` and `AGENTS.md` were
-replaced; Next.js's guidance for coding agents is preserved at
-`docs/reference/nextjs-agent-notes.md`.
-
-Still unreviewed, and owed an explanation as an **architectural** note — not a
-lesson: `target: "ES2017"` and `allowJs: true` in `tsconfig.json`, and
-`sharp: false` / `unrs-resolver: false` in `pnpm-workspace.yaml` (install scripts
-blocked — a security default).
-
-The hand-rebuild exercise in `~/repos/scratch-next` is **cancelled** under the new
-brief. It was a learning task.
-
----
-
-## 9. What to read, in what order
+## 7. What to read, in what order
 
 | File | Why |
 |---|---|
@@ -345,17 +290,15 @@ brief. It was a learning task.
 
 ---
 
-## 10. The session's architectural concept
+## 8. The session's architectural concept
+
+**Evening, 19 Nov:** *the schema is the source of truth, and a migration is
+versioned SQL you commit.* Nobody edits the live database; they edit
+`schema.prisma`, and Prisma translates the difference into SQL that lives in git
+forever. In Prisma 7 the *shape* of the data sits in the schema while the
+*connection* sits in `prisma.config.ts` — same database, two consumers, one
+definition.
 
 **Morning, 19 Nov:** *configuration is an input to the system, not part of it.*
 The OAuth client, its secret and the allowlist live outside the code; the code
-reads names at start-up. That is why replacing the client costs two lines in a
-gitignored file and no code change.
-
-Session 5's concept, for reference: the schema is the source of truth and the
-migration it generates is versioned SQL you commit — Prisma only translates one
-into the other, and in Prisma 7 the *shape* of the data lives in the schema while
-the *connection* lives in `prisma.config.ts`.
-
-Tonight's session should name its own concept, in one or two sentences, in §10 of
-its rewrite.
+reads names at start-up.
