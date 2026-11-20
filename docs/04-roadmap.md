@@ -78,6 +78,11 @@ scripts.
 
    *✅ Created 19 Nov, in Testing status — see `docs/reference/oauth-setup.md`.
    The production redirect URI is added once the Vercel project exists.*
+
+   **20 Nov:** `next-auth@5.0.0-beta.32` pinned, JWT sessions, the allowlist
+   enforced server-side in the `signIn` callback, and a sign-in page that
+   redirects to Google. **Still open:** the `User` row on first sign-in, which
+   needs a Prisma driver adapter and the household row.
 3. **Shell.** Sidebar on desktop, bottom tabs on phone, placeholder dashboard;
    sign-in page that works at 390px.
 4. **Deploy.** Vercel project connected to the GitHub repo, environment variables

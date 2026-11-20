@@ -186,7 +186,9 @@ sequenceDiagram
   Enforced in the `signIn` callback, server-side. The UI never decides access.
 - **Session:** JWT cookie, `httpOnly`, `secure`, `sameSite=lax`, 30-day rolling.
 - **Household:** resolved from the session on every request. No client-supplied
-  household identifiers are ever trusted.
+  household identifiers are ever trusted. Until provisioning lands, the session
+  carries the Google identity only; the `User` row and its `householdId` are
+  added on first sign-in in the next step.
 - **Demo mode:** a seeded `role: demo` user can read but not write; mutations
   check the role server-side. This is what the public deployment shows.
 
@@ -393,6 +395,9 @@ production promotion. Never edit a migration that has been applied.
 | 2026-11-16 | `@types/node` tracks the runtime (^26) | The compiler should describe the machine it runs on | Leave at ^20 |
 | 2026-11-16 | Calendar days are ISO strings, arithmetic in `src/lib/dates.ts` | A day has no time or timezone; strings make the month-boundary bug impossible and tests readable | `Date` at UTC midnight; a wrapper class |
 | 2026-11-19 | Neon for the dev database as well as production; the CLI uses the **direct** connection | One provider, so local and deployed behave the same. Migrations cannot run through a pooled connection, so pooling is a deploy-time concern | Docker Postgres locally; deferred to a session of its own |
+| 2026-11-20 | `next-auth` pinned to **`5.0.0-beta.32`**, exactly | v5 is the line built for the App Router and React 19. An exact pin means a new beta cannot change behaviour under us mid-week | v4 (no App Router integration); hand-rolled signed-cookie sessions |
+| 2026-11-20 | **JWT sessions, `User` row created on first sign-in.** No Prisma adapter, so no `Account` or `Session` tables | Two tables instead of four, and nothing about our data takes Google's shape. Refresh tokens are not needed for sign-in only | Prisma adapter (conventional, adds two tables and a dependency) |
+| 2026-11-20 | The single v1 `Household` row is **inserted by hand once**; the app resolves the one that exists | Cheapest option while there is exactly one household. The seed script arrives with the demo household, not before | Seed script now; create-on-first-sign-in |
 
 ## 13. Open technical questions
 
