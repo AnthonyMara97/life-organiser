@@ -2,8 +2,7 @@
 
 **Last updated:** 20 November 2026, end of the Friday auth session.
 **Next session:** Saturday 21 November, 30 minutes. Start at §0.1.
-Run `git status -sb` before anything else — two commits from 20 November are
-**local only** (§5, behaviour 3).
+Run `git status -sb` before anything else.
 
 ---
 
@@ -127,7 +126,7 @@ blocks the two-person acceptance test.
 Commit history, oldest last:
 
 ```
-228065c feat(auth): add Google sign-in with a server-side allowlist   ← local, unpushed
+228065c feat(auth): add Google sign-in with a server-side allowlist   ← pushed 20 Nov
 bbfd716 docs: close the migration session and open the auth decisions
 cd5f0f0 feat(db): apply the initial migration to Neon
 753cbfb docs: close the OAuth morning session and point at the database decision
@@ -138,7 +137,7 @@ cd5f0f0 feat(db): apply the initial migration to Neon
 ac066fd feat(db): add Prisma schema for Household and User
 ```
 
-The commit immediately after `228065c` closes this session (this file).
+The commits after `228065c` close this session (this file).
 
 ---
 
@@ -222,8 +221,10 @@ Vercel environment variable.
    /mnt/c/.../x.sh`. Scripts should `[ -f package.json ]` rather than `cd`.
 3. **The push cannot be done by an agent.** No SSH agent runs by default and the
    key is passphrase-protected, so `git push` waits forever for a prompt nobody
-   can type. On 20 Nov the agent committed both changes and could not push.
-   Anthony must run, in his own WSL terminal:
+   can type. On 20 Nov the agent committed and could not push; Anthony pushed by
+   typing the passphrase in a terminal window. Expect the same next session:
+   prepare the commits, then hand him the window. He must run, in his own WSL
+   terminal:
    ```bash
    eval "$(ssh-agent -s)"
    ssh-add ~/.ssh/id_ed25519          # passphrase, typed by him
@@ -307,7 +308,8 @@ Verified:
 - Posting the sign-in form returns a 302 to
   `accounts.google.com/o/oauth2/v2/auth` with the right `redirect_uri`, the
   client id present and scope `openid profile email`.
-- Committed as `228065c`. **Not pushed** (behaviour 3).
+- Committed as `228065c` and pushed, with the session-close commit `9651f68`,
+  after Anthony unlocked the key in a terminal window.
 
 ### 19 November — evening (first migration)
 
