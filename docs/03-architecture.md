@@ -398,6 +398,7 @@ production promotion. Never edit a migration that has been applied.
 | 2026-11-20 | `next-auth` pinned to **`5.0.0-beta.32`**, exactly | v5 is the line built for the App Router and React 19. An exact pin means a new beta cannot change behaviour under us mid-week | v4 (no App Router integration); hand-rolled signed-cookie sessions |
 | 2026-11-20 | **JWT sessions, `User` row created on first sign-in.** No Prisma adapter, so no `Account` or `Session` tables | Two tables instead of four, and nothing about our data takes Google's shape. Refresh tokens are not needed for sign-in only | Prisma adapter (conventional, adds two tables and a dependency) |
 | 2026-11-20 | The single v1 `Household` row is **inserted by hand once**; the app resolves the one that exists | Cheapest option while there is exactly one household. The seed script arrives with the demo household, not before | Seed script now; create-on-first-sign-in |
+| 2026-11-21 | **`@prisma/adapter-pg@7.10.1` + `pg`** as the Prisma driver adapter | Ordinary Postgres semantics, so dev and production behave identically, and it uses the direct connection string already in `.env.local`. Pooling stays Neon's job at deploy time | `@prisma/adapter-neon` (expects the pooled host, so dev and prod would differ); deferring again (blocks Week 1's acceptance test) |
 
 ## 13. Open technical questions
 

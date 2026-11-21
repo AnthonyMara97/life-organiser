@@ -1,72 +1,53 @@
 # 07 — Session Handover
 
-**Last updated:** 20 November 2026, end of the Friday auth session.
-**Next session:** Saturday 21 November, 30 minutes. Start at §0.1.
+**Last updated:** 21 November 2026, end of the Saturday provisioning session.
+**Next session:** Sunday 22 November, 30 minutes. Start at §0.1.
 Run `git status -sb` before anything else.
 
 ---
 
 ## 0. Start here
 
-### 0.1 Saturday: insert the household row, then provision the user
+### 0.1 Sunday: the app shell, then the deploy
 
-Two pieces of work, in this order. The first is Anthony's hand, the second is
-code.
+**Open with one decision: does the shell introduce shadcn/ui, or stay plain
+Tailwind?**
 
-**Step 1 — the `Household` row (no code, ~5 minutes, guided).** Anthony decided
-on 20 Nov that the single v1 household is **inserted by hand once**, not seeded
-and not created on first sign-in. He asked to do it on Saturday with the agent
-guiding. He has not chosen the name — it is user-visible data, so ask him for it
-rather than inventing one.
+- **Plain Tailwind for the shell** *(recommended)*. The login page already does
+  this and the shell is a sidebar, bottom tabs and a placeholder — roughly forty
+  lines. shadcn/ui arrives in Week 3, where the quick-add form and the undo
+  toast actually need a dialog, and it arrives with a real component to justify
+  the dependency.
+- **shadcn/ui now.** Sets the component conventions before there is much UI to
+  retrofit. Costs the rest of the session: initialise the CLI, add components,
+  agree where they live.
+- **Defer the shell.** Cheapest, but Week 1 has nothing on screen to show for
+  itself.
 
-He runs this in the Neon console's SQL editor for the `life-organiser` project
-(database `neondb`), replacing the name:
+Recommendation is the first. Cost to reverse: adopting shadcn/ui later is a CLI
+command and moving markup into its components — no data or routing changes.
 
-```sql
-insert into "Household" (id, name, "createdAt")
-values ('household_v1', 'The <surname> household', now());
-```
+**Then the shell**, at 390px first: sidebar on desktop, bottom tabs on phone, a
+placeholder dashboard, and the sign-in page checked at phone width. The session
+must stay server-rendered; `auth()` already provides `householdId` (§2).
 
-Notes for the guide:
+**Then the deploy**, in this order:
 
-- `id` is a plain `String` primary key, so a readable literal is valid; the
-  `cuid(2)` default only applies when Prisma creates the row. It must never be
-  changed once `User` rows point at it.
-- Verify with `select id, name from "Household";` — exactly one row.
-- Do **not** paste the connection string or any real household detail into chat.
+1. Create the Vercel project from `github.com/AnthonyMara97/life-organiser`.
+2. Add the production redirect URI to the Google OAuth client:
+   `https://<vercel-domain>/api/auth/callback/google`. Google Console → the
+   `Life Organiser web` client → Authorised redirect URIs.
+3. Vercel environment variables: `DATABASE_URL` (**pooled** — the `-pooler`
+   host, unlike dev), `AUTH_SECRET`, `ALLOWED_EMAILS`, `AUTH_GOOGLE_ID`,
+   `AUTH_GOOGLE_SECRET`. Use `sslmode=verify-full` in the pooled string rather
+   than `require`; `pg` currently treats `require` as `verify-full` but warns
+   that version 9 will change that.
+4. Deploy, then open the URL on a phone and sign in.
 
-**Step 2 — the adapter decision, then provisioning.** The `User` row on first
-sign-in needs the database at runtime, and Prisma 7 has no built-in connection:
-it needs a driver adapter. Anthony deferred this on 20 Nov by choosing "no
-database tonight", so **the adapter is still unchosen** — it is not a decision
-that was made and parked, it is a decision still to put to him.
-
-Options, as presented on 20 Nov:
-
-- **`@prisma/adapter-pg@7.10.1` + `pg`** (recommended). Works with the direct
-  connection string already in `.env.local`; ordinary Postgres semantics, so dev
-  and production behave the same.
-- `@prisma/adapter-neon@7.10.1`. Serverless-friendly on Vercel, but expects the
-  `-pooler` host, which dev deliberately does not use, and its connection
-  semantics differ.
-- Defer again. Cheap, but Week 1's acceptance test then slips further.
-
-Cost to reverse: one import and one constructor line, plus switching the URL to
-the pooled host. Nothing else depends on the choice.
-
-**Then the code, once he has chosen:** a Prisma singleton at `src/lib/db.ts`
-built on the chosen adapter; in the `signIn` callback, after the allowlist
-passes, find the one household and upsert the `User` by email; put `userId` and
-`householdId` on the JWT in the `jwt` callback and expose them in `session`.
-**Fail closed:** if provisioning throws, the sign-in must fail rather than mint
-a session with no household.
-
-**Schedule, honestly:** Saturday is 30 minutes and now carries the household
-row, the adapter decision, provisioning and tests. The shell (390px sign-in
-page, sidebar/tabs) and the deploy are still ahead, in a 30-minute Sunday. That
-is more than the remaining hour. Week 1's acceptance test — signing in from a
-phone on the deployed URL — will most likely land on Monday. Do not compress two
-weeks to catch up.
+**Schedule, honestly:** Sunday is 30 minutes and now carries a decision, the
+shell and the deploy. Week 1's acceptance test — signing in from a phone on the
+deployed URL — will most likely land on Monday. Do not compress two weeks to
+catch up.
 
 ### 0.2 Still open, and needed before Week 2
 
@@ -77,11 +58,15 @@ period functions. `BudgetPeriod` stays marked `(proposed)` in
 **Two-tier ledger** (`needs_review` vs `confirmed`) and **savings-goal-as-P0** —
 also unconfirmed from earlier sessions.
 
-**Anthony's own task:** his wife's Google Account, created from her Outlook
+**Anthony's own task: his wife's Google Account**, created from her Outlook
 address, then that address added **both** as a Google test user and to
-`ALLOWED_EMAILS`. As of 20 Nov, `ALLOWED_EMAILS` holds **one** address —
-Anthony's. The two lists are separate on purpose. Not blocking the build; it
-blocks the two-person acceptance test.
+`ALLOWED_EMAILS`. As of 21 Nov, `ALLOWED_EMAILS` holds **one** address —
+Anthony's, and one `User` row exists.
+
+Use that task to close the untested rejection path: **she signs in before her
+address is added.** Expect `/login` with `AccessDenied` and the `User` count to
+stay at 1. Then add her and have her sign in again. That is the two-person
+acceptance test, and it is the only part of XC-1 not yet evidenced.
 
 ---
 
@@ -111,13 +96,15 @@ blocks the two-person acceptance test.
 | Next.js scaffold | ✅ Builds, typechecks, lints |
 | `src/lib/dates.ts` | ✅ Written, tested. **Do not re-teach it** |
 | Prisma | ✅ 7.10.1, client generated, CLI loads `.env.local` |
+| Prisma driver adapter | ✅ `@prisma/adapter-pg@7.10.1` + `pg@8.23.1`, in `src/lib/db.ts` |
 | Database | ✅ Neon dev project, Sydney. Migration applied |
 | Google OAuth client | ✅ Created 19 Nov, Publishing status Testing |
-| **Auth.js** | ✅ **Installed and working** — `next-auth@5.0.0-beta.32`, pinned exactly |
+| **Auth.js** | ✅ `next-auth@5.0.0-beta.32`, pinned exactly |
 | Allowlist | ✅ Enforced server-side in `signIn`; 8 tests |
 | Sign-in page | ✅ `/login` renders and redirects to Google |
-| `User` provisioning | ❌ Not written — needs the adapter (§0.1) |
-| `Household` row | ❌ Not in the database — inserted by hand Saturday (§0.1) |
+| `Household` row | ✅ One row, `household_v1`, inserted by hand 21 Nov |
+| **`User` provisioning** | ✅ Built and verified 21 Nov — one row, one household, no orphans |
+| Two-person test | ❌ Blocked on his wife's account (§0.2) |
 | App UI | ❌ Placeholder page showing the session; no shell |
 | Deployment | ❌ Not started |
 | GitHub remote | ✅ `github.com/AnthonyMara97/life-organiser` |
@@ -126,7 +113,8 @@ blocks the two-person acceptance test.
 Commit history, oldest last:
 
 ```
-228065c feat(auth): add Google sign-in with a server-side allowlist   ← pushed 20 Nov
+d78898a feat(auth): provision the User row on sign-in   ← 21 Nov, pushed
+228065c feat(auth): add Google sign-in with a server-side allowlist
 bbfd716 docs: close the migration session and open the auth decisions
 cd5f0f0 feat(db): apply the initial migration to Neon
 753cbfb docs: close the OAuth morning session and point at the database decision
@@ -137,7 +125,8 @@ cd5f0f0 feat(db): apply the initial migration to Neon
 ac066fd feat(db): add Prisma schema for Household and User
 ```
 
-The commits after `228065c` close this session (this file).
+The commit after `d78898a` closes this session (this file, the decision log, the
+roadmap and the XC-1 status).
 
 ---
 
@@ -147,32 +136,26 @@ The commits after `228065c` close this session (this file).
 |---|---|---|
 | ~~Thu 19~~ | ~~1h~~ | ✅ Database decision, Neon created, first migration applied |
 | ~~Fri 20~~ | ~~1h~~ | ✅ Auth.js with Google, the `ALLOWED_EMAILS` allowlist, sign-in page |
-| **Sat 21** | 30m | Household row by hand, adapter decision, `User` provisioning |
+| ~~Sat 21~~ | ~~30m~~ | ✅ Household row by hand, adapter decision, `User` provisioning |
 | **Sun 22** | 30m | App shell at 390px, then deploy to Vercel and sign in from a phone |
 
-Two goals were planned for this weekend and there are now three; the acceptance
-test likely lands Monday. Acceptable at this pace.
+Week 1's acceptance test likely lands Monday. Acceptable at this pace.
 
 ---
 
 ## 4. Next actions, in order
 
-1. **Saturday, first:** guide Anthony through the household `INSERT` in the Neon
-   SQL editor (§0.1). Verify one row exists.
-2. **Put the adapter decision to him** (§0.1). Nothing installed before he
-   answers.
-3. Install the chosen adapter, add `src/lib/db.ts` (Prisma singleton with the
-   adapter), and implement provisioning in `signIn` + `jwt` + `session`. Fail
-   closed on a database error.
-4. Test both paths: his account creates exactly one `User` row with the
-   household; a non-allowlisted address is rejected with no row written.
-5. App shell: sidebar on desktop, bottom tabs on phone, placeholder dashboard,
+1. **Sunday first:** put the shadcn/ui decision to him (§0.1), then build the
+   app shell — sidebar on desktop, bottom tabs on phone, placeholder dashboard,
    sign-in page at 390px.
-6. Deploy to Vercel: production redirect URI added to the OAuth client, **pooled**
-   Neon string as a Vercel env var, `AUTH_SECRET`, `ALLOWED_EMAILS`,
-   `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`.
-7. Add `db:seed` only when a demo household exists — deliberately absent now.
-8. When the budget period model is settled, write the period functions with
+2. Deploy to Vercel: production redirect URI in the OAuth client, **pooled**
+   Neon string plus `AUTH_SECRET`, `ALLOWED_EMAILS`, `AUTH_GOOGLE_ID`,
+   `AUTH_GOOGLE_SECRET` as environment variables.
+3. Sign in on a phone at the deployed URL — Week 1's acceptance test.
+4. Have his wife sign in **before** her address is allowlisted; confirm
+   `AccessDenied` and `User` count unchanged; then allowlist her.
+5. Add `db:seed` only when a demo household exists — deliberately absent now.
+6. When the budget period model is settled, write the period functions with
    tests.
 
 ---
@@ -204,7 +187,8 @@ Everything lives inside Ubuntu, not Windows.
 | Connection used | **Direct** (host has no `-pooler`), `sslmode=require` |
 | Where it lives | `DATABASE_URL` in `.env.local`, mode 600, never committed |
 | Migration | `prisma/migrations/20261119044104_init` — applied and verified |
-| Household row | ❌ Does not exist yet — Saturday's first task |
+| Household row | ✅ `household_v1` — one row, inserted by hand 21 Nov |
+| User rows | ✅ One, created by a real sign-in on 21 Nov |
 
 Pooling is deliberately **off** in the dev URL: `prisma migrate` cannot run
 through a pooled connection. At deploy time the app takes the pooled string as a
@@ -219,19 +203,43 @@ Vercel environment variable.
    short `.sh` to `/mnt/c/Users/amara/AppData/Local/Temp/opencode/` and run it
    with `wsl -d Ubuntu --cd /home/anthony/repos/life-organiser -- bash
    /mnt/c/.../x.sh`. Scripts should `[ -f package.json ]` rather than `cd`.
-3. **The push cannot be done by an agent.** No SSH agent runs by default and the
-   key is passphrase-protected, so `git push` waits forever for a prompt nobody
-   can type. On 20 Nov the agent committed and could not push; Anthony pushed by
-   typing the passphrase in a terminal window. Expect the same next session:
-   prepare the commits, then hand him the window. He must run, in his own WSL
-   terminal:
+3. **The push needs Anthony's passphrase once per WSL session — set the agent up
+   immediately, then never ask again.** No SSH agent runs by default and the key
+   is passphrase-protected, so a push without one waits forever for a prompt an
+   agent cannot type (it hung for 120s on 20 Nov).
+
+   **Standing instruction from Anthony (20 Nov):** the moment a push is wanted,
+   start the agent on a **fixed socket** and open the terminal window for him at
+   once, so he types the passphrase exactly once. After that, every push in the
+   session uses that socket — do not ask him again, and do not reopen the window
+   "to be safe". Check with `SSH_AUTH_SOCK=/tmp/ssh-agent.sock ssh-add -l` first;
+   if the key is listed, just push.
+
+   Setup, run in his terminal window (a human types the passphrase):
    ```bash
-   eval "$(ssh-agent -s)"
-   ssh-add ~/.ssh/id_ed25519          # passphrase, typed by him
-   cd ~/repos/life-organiser && git push origin main
+   ssh-agent -a /tmp/ssh-agent.sock
+   SSH_AUTH_SOCK=/tmp/ssh-agent.sock ssh-add ~/.ssh/id_ed25519
    ```
-   The agent dies with the WSL instance. `ssh-add` succeeding is not enough; the
-   push must see the same `SSH_AUTH_SOCK` (the `eval` covers it).
+   Then every push from any later command:
+   ```bash
+   SSH_AUTH_SOCK=/tmp/ssh-agent.sock git push origin main
+   ```
+
+   The fixed path is the whole point. `eval "$(ssh-agent -s)"` invents a random
+   socket under `/tmp/ssh-XXXX/`, which no later process can find, and closing
+   the window loses it. With `-a /tmp/ssh-agent.sock` the agent is a daemon that
+   outlives the window, so the window can be closed straight after the prompt.
+   It still dies with the WSL instance (`wsl --shutdown`, or a Windows restart) —
+   then the passphrase is needed once more.
+
+   To open the window, write a short `.sh` and launch it detached, e.g.:
+   ```powershell
+   Start-Process -FilePath wsl.exe -ArgumentList '-d','Ubuntu','--cd',
+     '/home/anthony/repos/life-organiser','--','bash','/mnt/c/.../unlock.sh'
+   ```
+   Keep the script's last line a `read -p "Press Enter to close..."` so the output
+   stays visible. Do not put the passphrase, or anything derived from it, in a
+   file, a command line, or chat.
 4. **`pnpm build` writes to stderr on success**, and **`pnpm add` prints a red
    `ERR_PNPM_IGNORED_BUILDS` even when the package installs.** Read the exit
    path, not the colour.
@@ -242,7 +250,7 @@ Vercel environment variable.
 7. **pnpm blocks install scripts** (`allowBuilds` in `pnpm-workspace.yaml`).
    `prisma`, `@prisma/engines` and `esbuild` are approved. A new package needing
    a postinstall stops the install — that is a security decision, so ask first.
-   `next-auth` needed no build script.
+   `next-auth`, `@prisma/adapter-pg` and `pg` needed no build script.
 8. **`cd` inside a script run as `bash /tmp/x.sh` fails** with ENOENT. Use
    `--cd` on the `wsl` command and guard with `[ -f package.json ]`.
 9. **Non-interactive shells have no `node`.** Source nvm in the script:
@@ -259,10 +267,70 @@ Vercel environment variable.
     it, do not paste it into chat, do not copy it into a command line. The same
     applies to `AUTH_GOOGLE_SECRET` and `AUTH_SECRET`; the client id is public
     and may be quoted.
+14. **`http://localhost:3000` failed in the browser on 21 Nov** with a DNS error
+    while the dev server was healthy; `http://127.0.0.1:3000` worked. The server
+    listens on `*:3000` and Windows reaches it — try the literal IP before
+    debugging Next or WSL port forwarding.
+15. **`pg` warns about `sslmode=require`** on every run: it currently behaves as
+    `verify-full`, and v9 will change what `require` means. The connection is
+    fine; use `verify-full` explicitly in the Vercel string.
 
 ---
 
 ## 6. What was actually done
+
+### 21 November — household row and user provisioning
+
+Decision put to Anthony, and his answer:
+
+- **Adapter:** `@prisma/adapter-pg@7.10.1` + `pg` (option A). Rejected
+  `@prisma/adapter-neon`, which expects the `-pooler` host that dev deliberately
+  does not use.
+
+Anthony's hand:
+
+- Inserted the single `Household` row in the Neon SQL editor, id
+  `household_v1`, with a name of his choosing. The name is real household data
+  and is **not recorded anywhere in this repo** — read it from the database if
+  it is ever needed. An earlier attempt had left the literal placeholder text
+  in `name`; it was corrected with a scoped `UPDATE` rather than a delete and
+  re-insert.
+
+Written:
+
+- `src/lib/db.ts` — one `PrismaClient` on `PrismaPg`, cached on `globalThis`
+  outside production so hot reload does not leak pools. Throws an explicit error
+  when `DATABASE_URL` is missing, because `pg` otherwise falls back to
+  `localhost:5432` and disguises the real fault.
+- `src/server/provision-user.ts` — reads the household (`take: 2`, so a second
+  row is detected rather than silently chosen), upserts the `User` by
+  lowercased email, returns `{ userId, householdId }`. Refreshes name and image
+  on every sign-in.
+- `src/types/next-auth.d.ts` — `session.user.id` and `session.user.householdId`.
+- `src/lib/auth.ts` — `signIn` runs the allowlist first, then provisions, so a
+  database failure aborts sign-in before a cookie exists. `jwt` provisions on
+  first mint and puts the ids on the token. `session` exposes them.
+
+Gotcha worth recording: **`declare module "next-auth/jwt"` does nothing in this
+version.** Auth.js re-exports its `JWT` interface from `@auth/core`, and module
+augmentation does not reach a re-export. The `session` callback narrows the
+token values with `typeof` instead. The `next-auth` `Session` augmentation does
+work.
+
+Verified:
+
+- `pnpm typecheck`, `pnpm lint`, `pnpm test` (**23 tests**: 15 dates + 8
+  allowlist — no new tests; provisioning is database-coupled and was verified
+  against the live dev database instead) and `pnpm build` all pass.
+- Real sign-in in the browser, then a counts-only query against the dev
+  database: 1 household, 1 user, 1 distinct household used, 0 users without a
+  household.
+- Second sign-in updated the row rather than adding one.
+- **Not yet verified at runtime:** a non-allowlisted address. The branch returns
+  `false` before any query, and the allowlist tests cover the decision — but the
+  evidence comes on Sunday (§0.2).
+
+Committed as `d78898a` and pushed after Anthony unlocked the SSH key.
 
 ### 20 November — evening (Auth.js)
 
@@ -276,7 +344,7 @@ Decisions put to Anthony, and his answers:
 - **C — household:** **inserted by hand once**. Chosen over a seed script and
   over create-on-first-sign-in.
 - **D — adapter:** presented, and he chose **no database tonight**. The adapter
-  is therefore still unchosen (§0.1). Nothing was installed for it.
+  was therefore still unchosen until 21 Nov.
 
 Written:
 
@@ -285,8 +353,6 @@ Written:
   exact match, so a lookalike domain cannot pass.
 - `src/lib/auth.ts` — `NextAuth({ providers: [Google], session: { strategy:
   "jwt" }, pages: { signIn: "/login", error: "/login" }, trustHost: true })`.
-  The `signIn` callback returns `isAllowedEmail(profile?.email,
-  process.env.ALLOWED_EMAILS)`.
 - `src/app/api/auth/[...nextauth]/route.ts` — exports `GET` and `POST` from
   `handlers`.
 - `src/actions/auth.ts` — `signInWithGoogle` and `signOutOfGoogle`, both
@@ -295,21 +361,6 @@ Written:
   `AccessDenied` message.
 - `src/app/page.tsx` — placeholder showing the signed-in address, or a sign-in
   link. The real shell is still to come.
-- `.env.example` — `(proposed)` markers removed; the comment names the pin.
-- Docs — three decision-log rows, XC-1 to in progress, roadmap note.
-
-Verified:
-
-- `pnpm typecheck`, `pnpm lint`, `pnpm test` (**23 tests**: 15 dates + 8
-  allowlist) and `pnpm build` all pass.
-- `/` and `/login` return 200 with the expected states.
-- `/api/auth/providers` reports `google` with callback
-  `http://localhost:3000/api/auth/callback/google`.
-- Posting the sign-in form returns a 302 to
-  `accounts.google.com/o/oauth2/v2/auth` with the right `redirect_uri`, the
-  client id present and scope `openid profile email`.
-- Committed as `228065c` and pushed, with the session-close commit `9651f68`,
-  after Anthony unlocked the key in a terminal window.
 
 ### 19 November — evening (first migration)
 
@@ -323,16 +374,14 @@ Verified:
   `prisma/migrations/20261119044104_init` and applied it.
 - Verified independently: `migrate status` up to date, and `db pull --print`
   matches `schema.prisma`.
-- `package.json` gained `db:migrate` and `db:studio`.
-- Committed as `cd5f0f0` and pushed.
 
 ### 19 November — morning (OAuth client)
 
 Full sequence in `docs/reference/oauth-setup.md`. Google Cloud project
 `life-organiser`; app **Life Organiser**, External, **Testing**, one test user,
 no scopes added, AI-agent checkbox unticked. Client `Life Organiser web`,
-redirect URI `http://localhost:3000/api/auth/callback/google`. Client id, secret
-and `AUTH_SECRET` are in `.env.local`. No production redirect URI yet.
+redirect URI `http://localhost:3000/api/auth/callback/google`. No production
+redirect URI yet.
 
 ---
 
@@ -352,6 +401,13 @@ and `AUTH_SECRET` are in `.env.local`. No production redirect URI yet.
 ---
 
 ## 8. The session's architectural concept
+
+**21 November:** *a driver adapter is the seam between the application and the
+network.* Prisma generates the query; the adapter owns the socket, the pool and
+the Postgres wire protocol. That seam is why the same schema can sit on a direct
+Neon connection in development and a pooled endpoint in production without the
+application code changing — and why the connection string, not the code, moves
+between environments.
 
 **Evening, 20 Nov:** *the server decides who is allowed in; the client only
 asks.* The button and Google's consent screen are requests. The `signIn`

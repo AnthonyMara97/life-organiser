@@ -83,6 +83,12 @@ scripts.
    enforced server-side in the `signIn` callback, and a sign-in page that
    redirects to Google. **Still open:** the `User` row on first sign-in, which
    needs a Prisma driver adapter and the household row.
+
+   **21 Nov:** the household row was inserted once by hand; `@prisma/adapter-pg`
+   chosen as the driver adapter and `src/lib/db.ts` added; the `User` row is now
+   provisioned on first sign-in and fails closed if the database or household is
+   missing. Verified: one user row, tied to the one household. **Still open:** the
+   app shell and the deploy.
 3. **Shell.** Sidebar on desktop, bottom tabs on phone, placeholder dashboard;
    sign-in page that works at 390px.
 4. **Deploy.** Vercel project connected to the GitHub repo, environment variables
