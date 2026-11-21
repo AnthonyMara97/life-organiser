@@ -113,7 +113,8 @@ acceptance test, and it is the only part of XC-1 not yet evidenced.
 Commit history, oldest last:
 
 ```
-d78898a feat(auth): provision the User row on sign-in   ← 21 Nov, pushed
+0de9b41 docs: record the adapter decision and close the provisioning session  ← pushed
+d78898a feat(auth): provision the User row on sign-in                         ← pushed
 228065c feat(auth): add Google sign-in with a server-side allowlist
 bbfd716 docs: close the migration session and open the auth decisions
 cd5f0f0 feat(db): apply the initial migration to Neon
@@ -125,8 +126,9 @@ cd5f0f0 feat(db): apply the initial migration to Neon
 ac066fd feat(db): add Prisma schema for Household and User
 ```
 
-The commit after `d78898a` closes this session (this file, the decision log, the
-roadmap and the XC-1 status).
+`0de9b41` closes this session (this file, the decision log, the roadmap and the
+XC-1 status). Both commits are pushed: `main` and `origin/main` were confirmed at
+`0de9b41` on 21 Nov.
 
 ---
 
@@ -240,6 +242,12 @@ Vercel environment variable.
    Keep the script's last line a `read -p "Press Enter to close..."` so the output
    stays visible. Do not put the passphrase, or anything derived from it, in a
    file, a command line, or chat.
+
+   **Anything that talks to the remote needs the socket, not just `push`.**
+   `git ls-remote` and `git fetch` without `SSH_AUTH_SOCK` wait for a passphrase
+   prompt that no agent can answer — it hung for 120s on 21 Nov while checking the
+   push had landed. The push itself was fine; only the check was missing the
+   variable.
 4. **`pnpm build` writes to stderr on success**, and **`pnpm add` prints a red
    `ERR_PNPM_IGNORED_BUILDS` even when the package installs.** Read the exit
    path, not the colour.
@@ -330,7 +338,8 @@ Verified:
   `false` before any query, and the allowlist tests cover the decision — but the
   evidence comes on Sunday (§0.2).
 
-Committed as `d78898a` and pushed after Anthony unlocked the SSH key.
+Committed as `d78898a`; `0de9b41` closed the session. Both pushed after Anthony
+unlocked the SSH key, and `origin/main` was confirmed at `0de9b41`.
 
 ### 20 November — evening (Auth.js)
 
