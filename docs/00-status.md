@@ -9,14 +9,14 @@
 
 ---
 
-**POSITION:** Week 1 of 16 · build item 4 of 4 (the deploy) · next: Vercel
-project, production env vars, redirect URI, then the phone sign-in.
+**POSITION:** Week 1 complete (23 Nov, deployed and signed in on a phone) ·
+**Week 2 not started** — it opens with the budget period model.
 
 | | |
 |---|---|
-| **Done** | Database on Neon (19 Nov) · Auth.js + allowlist (20 Nov) · `User` provisioning (21 Nov) · separate `dev` data branch (23 Nov) · app shell closed against XC-3 (23 Nov) |
+| **Done** | Database on Neon (19 Nov) · Auth.js + allowlist (20 Nov) · `User` provisioning (21 Nov) · separate `dev` data branch (23 Nov) · app shell closed against XC-3 (23 Nov) · **deployed to Vercel and signed in from a phone (23 Nov)** |
 | **In progress** | — |
-| **Not started** | Deploy to Vercel · two-person allowlist test |
+| **Not started** | Week 2 (budget periods) · two-person allowlist test |
 | **Unverified** | A non-allowlisted sign-in at runtime · the second account (blocked on his wife's Google account) |
 
 ## Awaiting decision
@@ -56,6 +56,7 @@ Full reasoning in `03-architecture.md` §12; environments in §11. Cite the ID.
 | D19 | Plain Tailwind for the app shell; no shadcn/ui in Week 1 |
 | D20 | A `dev` Neon branch holds local data; `production` is for the deployed app |
 | D21 | Dark mode follows the OS; no in-app toggle |
+| D22 | Vercel env vars are Production-only; previews have no database |
 
 **When a document and the live system disagree, the live system wins — say so and
 ask.** Neon, Google Cloud and Vercel hold state this repository cannot see. A

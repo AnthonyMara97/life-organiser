@@ -377,10 +377,14 @@ coverage.
 
 Local and production are **branches of one Neon project**, not separate
 projects (D20). A branch is copy-on-write: it starts as the parent's data, and
-storage only grows with what differs.
+storage only grows with what differs. Production is deployed at
+`https://life-organiser-eight.vercel.app` and auto-deploys from `main`; its
+environment variables exist for Production only (D22).
 
-Migrations: `prisma migrate dev` locally, `prisma migrate deploy` in CI before
-production promotion. Never edit a migration that has been applied.
+Migrations: `prisma migrate dev` locally. Production migrations are applied by
+hand against the `production` branch, with `prisma migrate deploy`, before the
+deploy that needs them — there is no CI yet. Never edit a migration that has
+been applied.
 
 ## 12. Decision log
 
@@ -411,6 +415,7 @@ when a row reverses an earlier one. Two rows record a reversal: D10 reverses D7.
 | D19 | 2026-11-23 | **Plain Tailwind for the app shell**; shadcn/ui is not introduced in Week 1 | The shell is a sidebar, bottom tabs and a placeholder — roughly forty lines. shadcn/ui is worth its dependency when the first component actually needs a dialog or a toast | shadcn/ui now (costs the session and delays the deploy); deferring the shell entirely (Week 1 ends with nothing on screen) |
 | D20 | 2026-11-23 | **A separate Neon branch, `dev`, holds local data; `production` is for the deployed app** | `prisma migrate dev` can reset a database when it detects drift, and local experiments plus the two-person test must not touch the household's real rows. A branch is copy-on-write, so the storage cost is negligible | One branch for both (cheapest, but a bad migration destroys real data); a second Neon project (the console, the limits and the billing counted twice) |
 | D21 | 2026-11-23 | **Dark mode follows the operating system**; there is no in-app toggle | XC-3 asks for dark mode, not for a control. Swapping tokens under `prefers-color-scheme` means no stored preference, no second client island and no flash of the wrong theme — and every component names a role (canvas, surface, ink, line, accent) instead of a colour | A visible toggle (an explicit override, paid for with a cookie read to avoid the flash); automatic plus override (most flexible, most work) |
+| D22 | 2026-11-23 | **Vercel environment variables are set for Production only**; a preview deployment has no database and would fail at build | There is no preview branch, and a preview pointed at `production` would write the household's real rows from throwaway builds. A preview that fails loudly is the safer failure | Let previews share `production` (cheapest, but throwaway builds touch real data); create a preview branch now (extra setup before Week 2) |
 
 ## 13. Open technical questions
 

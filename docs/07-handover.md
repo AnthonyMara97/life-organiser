@@ -1,13 +1,14 @@
 # 07 — Session Handover
 
-**Last updated:** 23 November 2026, mid-session (Monday). The Sunday session was
-missed, so this one combined it with Monday's hour. Rewritten in full at close.
-**Next action:** `00-status.md` is the position. Close the shell's XC-3 gap, then
-deploy.
+**Last updated:** 23 November 2026, end of the Monday session (the Sunday session
+was missed, so this one carried both). **Week 1 is complete** — the app is
+deployed and Anthony has signed in on his phone.
+**Next action:** `00-status.md` is the position. The two-person allowlist test,
+then Week 2's opening decisions.
 Run `git status -sb` before anything else.
 
 > **Position lives in `docs/00-status.md`.** Read that first: one page, the
-> milestone and build item, the settled decisions (`D1`–`D20`) and what is still
+> milestone and build item, the settled decisions (`D1`–`D22`) and what is still
 > open. This file is the detail behind it. A decision that appears in
 > `00-status.md` as settled is settled — cite it, do not re-open it.
 
@@ -34,26 +35,28 @@ hour. What landed:
 - **`.env.local` moved onto the `dev` Neon branch** (D20); `production` is now
   reserved for the deployed app. Both branches carry the same single migration
   and the same single household row.
+- **Deployed and proven on 23 Nov:** Vercel project `life-organiser`, domain
+  `life-organiser-eight.vercel.app`, database on the `production` branch. Anthony
+  signed in from his phone — Week 1's acceptance test. Week 1 is closed.
 
-### 0.2 The deploy, and Week 1's acceptance test
+### 0.2 What is deployed
 
-Week 1 ends when Anthony signs in from his phone on the deployed URL.
+| Piece | Value |
+|---|---|
+| Domain | `https://life-organiser-eight.vercel.app` |
+| Vercel project | `marafioti/life-organiser`, auto-deploys on push to `main` |
+| Database | Neon branch `production`, **pooled** connection, `sslmode=verify-full` |
+| Env vars | `DATABASE_URL`, `AUTH_SECRET`, `ALLOWED_EMAILS`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` — **Production only** (D22) |
+| Google redirect URIs | `https://life-organiser-eight.vercel.app/api/auth/callback/google`, `http://localhost:3000/…`, `http://127.0.0.1:3000/…` |
+| Build command | `package.json`'s `build` → `prisma generate && next build`; no Vercel override |
 
-1. Create the Vercel project from `github.com/AnthonyMara97/life-organiser`.
-2. Add the production redirect URI to the Google OAuth client:
-   `https://<vercel-domain>/api/auth/callback/google`. Google Console → the
-   `Life Organiser web` client → Authorised redirect URIs. Add
-   `http://127.0.0.1:3000/api/auth/callback/google` in the same visit — that host
-   has already failed once with `redirect_uri_mismatch`.
-3. Vercel environment variables: `DATABASE_URL` (**pooled** — the `-pooler` host
-   of the `production` branch), `AUTH_SECRET`, `ALLOWED_EMAILS`,
-   `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`. Use `sslmode=verify-full` in the
-   pooled string rather than `require`; `pg` treats `require` as `verify-full`
-   today but warns that version 9 will not.
-4. Deploy, then open the URL on a phone and sign in. That phone sign-in is
-   Week 1's acceptance test.
+Verified from outside with no session: `/` and `/dashboard` return 307 to
+`/login`; `/login` renders; `/api/auth/providers` reports exactly the callback
+URI above. Changing any env var requires a redeploy before it takes effect.
 
-### 0.3 Still open, and needed before Week 2
+### 0.3 Still open, and what Week 2 needs
+
+Week 1 closed on 23 Nov. Week 2 does not start until these are answered.
 
 **The budget period model** — fortnightly, monthly, or two-tier. Blocks the
 period functions. `BudgetPeriod` stays marked `(proposed)` in
@@ -63,9 +66,9 @@ period functions. `BudgetPeriod` stays marked `(proposed)` in
 also unconfirmed from earlier sessions.
 
 **Anthony's own task: his wife's Google Account**, created from her Outlook
-address, then that address added **both** as a Google test user and to
-`ALLOWED_EMAILS`. As of 21 Nov, `ALLOWED_EMAILS` holds **one** address —
-Anthony's, and one `User` row exists.
+address, then that address added **both** as a Google test user and to the Vercel
+`ALLOWED_EMAILS` (which needs a redeploy). As of 23 Nov, `ALLOWED_EMAILS` holds
+**one** address — Anthony's — and the `production` branch has one `User` row.
 
 Use that task to close the untested rejection path: **she signs in before her
 address is added.** Expect `/login` with `AccessDenied` and the `User` count to
@@ -110,29 +113,29 @@ acceptance test, and it is the only part of XC-1 not yet evidenced.
 | **`User` provisioning** | ✅ Built and verified 21 Nov — one row, one household, no orphans |
 | Two-person test | ❌ Blocked on his wife's account (§0.3) |
 | App UI | ✅ Shell closed against XC-3 on 23 Nov — sidebar, phone tabs, OS dark mode, `/dashboard` |
-| Deployment | ❌ Not started — Vercel account exists, no project imported |
+| Deployment | ✅ Live at `life-organiser-eight.vercel.app`, production branch, phone sign-in proven 23 Nov (D22) |
 | GitHub remote | ✅ `github.com/AnthonyMara97/life-organiser` |
 | Roadmap | ✅ 6 hours/week, 16 weeks |
 
-Commit history, oldest last:
+Commit history, newest first:
 
 ```
-0de9b41 docs: record the adapter decision and close the provisioning session  ← pushed
-d78898a feat(auth): provision the User row on sign-in                         ← pushed
-228065c feat(auth): add Google sign-in with a server-side allowlist
-bbfd716 docs: close the migration session and open the auth decisions
-cd5f0f0 feat(db): apply the initial migration to Neon
-753cbfb docs: close the OAuth morning session and point at the database decision
-3c6c403 docs(auth): record the OAuth client runbook and env names
-3517a31 docs: record the OAuth session, the WSL workaround and the Prisma state
-915dfe5 chore(deps): approve Prisma build scripts and generate the client
-9befe16 docs: switch to shipping mode and re-plan at six hours a week
-ac066fd feat(db): add Prisma schema for Household and User
+46b87da docs: close XC-3, record D21 and put accounts in the folder tree
+9d33ea3 feat(shell): close XC-3 with OS dark mode and the dashboard route
+97be195 docs: record the dev branch, the build change and the closed decisions
+747bfda docs: remove the deploy runbook until the deploy is decided
+8d9df39 chore(deploy): generate the Prisma client during build
+c9e157f docs: make the project position and settled decisions impossible to miss
+b4d7001 chore(deploy): generate the Prisma client on install and record the runbook
+e1c7571 feat(shell): add the app shell behind the sign-in gate
+2115b2c docs: record that the provisioning session is pushed
+0de9b41 docs: record the adapter decision and close the provisioning session
+d78898a feat(auth): provision the User row on sign-in
 ```
 
-`0de9b41` closes this session (this file, the decision log, the roadmap and the
-XC-1 status). Both commits are pushed: `main` and `origin/main` were confirmed at
-`0de9b41` on 21 Nov.
+The 23 Nov commits close this session — this file, the status page, the decision
+log and the feature status. `main` and `origin/main` were level at the
+session-close commit.
 
 ---
 
@@ -151,12 +154,12 @@ Week 1's acceptance test likely lands Monday. Acceptable at this pace.
 
 ## 4. Next actions, in order
 
-1. Deploy to Vercel: production redirect URI in the OAuth client, **pooled**
-   Neon string from the `production` branch plus `AUTH_SECRET`, `ALLOWED_EMAILS`,
-   `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` as environment variables.
-2. Sign in on a phone at the deployed URL — Week 1's acceptance test.
-3. Have his wife sign in **before** her address is allowlisted; confirm
-   `AccessDenied` and `User` count unchanged; then allowlist her.
+1. **Two-person allowlist test** (his hands): his wife signs in **before** her
+   address is added — expect `/login?error=AccessDenied` and the `User` count
+   unchanged; then add her to the Google test users *and* to the Vercel
+   `ALLOWED_EMAILS`, redeploy, and have her sign in.
+2. **Week 2's opening decisions**, before any code: the budget period model, the
+   two-tier ledger, and whether savings goals are P0.
 5. Add `db:seed` only when a demo household exists — deliberately absent now.
 6. When the budget period model is settled, write the period functions with
    tests.
@@ -288,6 +291,25 @@ Vercel environment variable.
 
 ## 6. What was actually done
 
+### 23 November — Monday (shell closed, environments separated, first deploy)
+
+Sunday 22 November was missed; this session carried both days.
+
+- `8d9df39` moved `prisma generate` from `postinstall` into `build`, so an
+  install without `.env.local` no longer fails.
+- `747bfda` deleted the deploy runbook, whose opening paragraph asserted a
+  production branch split that did not exist.
+- `97be195` recorded D20 and rewrote the position in the status page and here.
+- `9d33ea3` closed XC-3: colour tokens with OS-following dark mode (D21), the
+  dashboard at `/dashboard` with `/` redirecting, seven sidebar areas, five phone
+  tabs, and the sign-in page on the same tokens including `AccessDenied`.
+- Neon: created the `dev` branch and pointed `.env.local` at its **direct**
+  string; `production` reserved for the deployed app. Verified with
+  `prisma migrate status` (up to date) and read-only counts (1 household, 1 user).
+- Vercel: project created, the five environment variables set for **Production
+  only** (D22), deployed, the three Google redirect URIs added, and a real phone
+  sign-in. Week 1 closed.
+
 ### 21 November — household row and user provisioning
 
 Decision put to Anthony, and his answer:
@@ -411,6 +433,15 @@ redirect URI yet.
 ---
 
 ## 8. The session's architectural concept
+
+**23 November:** *a design token names a role, not a colour.* `--surface` means
+"whatever a card sits on" — white in light mode, near-black in dark — so
+`app-shell.tsx` never learns which theme is running and dark mode is one media
+query instead of a `dark:` variant on every element. The same session's deploy
+made the matching point about environments: the deployed app is the same code
+with different inputs. The database string, the secret and the allowlist are
+configuration injected at build and run time, which is why nothing in `src/`
+changed between the laptop and the phone.
 
 **21 November:** *a driver adapter is the seam between the application and the
 network.* Prisma generates the query; the adapter owns the socket, the pool and
