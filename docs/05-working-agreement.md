@@ -37,11 +37,18 @@ For every decision that is not pure execution detail, the assistant presents:
 |---|---|
 | **The decision** | One sentence. What actually needs choosing. |
 | **The options** | Two or three realistic ones. Not a false choice. |
-| **The recommendation** | Which one, and why. Including what could go wrong. |
+| **The recommendation** | Which one — **never omitted, never "it depends"**. What choosing it entails: what gets built, added, removed, or changes hands. Then a brief summary of why, in one or two sentences, including what could go wrong. |
 | **Cost to reverse** | Cheap now, expensive later, or effectively permanent. |
 
 Then it **stops and waits**. No implementation, no edits to the docs on that
-point, no "I went ahead and".
+point, no "I went ahead and". A decision sent without a recommendation is
+incomplete and is not sent.
+
+**Check the record first (added 23 Nov 2026).** Every settled decision has an ID
+(`D1`, `D2`, …), listed in `docs/00-status.md` and argued in
+`docs/03-architecture.md` §12. If the question is already answered there, it is
+not a decision — the assistant cites the ID and carries on. Where the documents
+and the live system disagree, it says so and asks which is true.
 
 **Execution detail** — naming a variable, choosing a file, formatting — proceeds
 without asking. Mentioning it in the summary is enough.
@@ -61,8 +68,8 @@ Revised 18 Nov 2026. The pair/coach split is withdrawn along with the teaching
 brief: Anthony no longer writes code as an exercise.
 
 1. **Decide.** The assistant opens with the one decision blocking the milestone —
-   one sentence, two or three options, a recommendation, the cost to reverse — and
-   waits.
+   one sentence, two or three options, a recommendation with what it entails and
+   why, the cost to reverse — and waits.
 2. **Build.** One batch, no mid-build check-ins unless something breaks or a new
    decision appears.
 3. **Overview, then commit.** The assistant shows what changed and why, in the

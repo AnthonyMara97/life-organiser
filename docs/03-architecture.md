@@ -379,26 +379,31 @@ production promotion. Never edit a migration that has been applied.
 
 ## 12. Decision log
 
-| Date | Decision | Why | Alternatives rejected |
-|---|---|---|---|
-| 2026-11-15 | Single Next.js app, no separate API | Fewer moving parts while learning; same concepts | Express + React SPA; tRPC monorepo |
-| 2026-11-15 | TypeScript strict | Type safety is the point of choosing TS | Plain JavaScript |
-| 2026-11-15 | PostgreSQL + Prisma | Relational data, readable migrations | SQLite; MongoDB; Drizzle |
-| 2026-11-15 | Money as signed integer cents | Removes float rounding bugs | `Float`; `Decimal` in app code |
-| 2026-11-15 | Google sign-in, two-email allowlist | No password handling; closed by default | Email magic links; passwords |
-| 2026-11-15 | Finances built first | User priority; hardest data modelling, best learning | Meals + groceries vertical slice |
-| 2026-11-15 | Drive via Picker + `drive.file` scope | Least privilege, simplest consent | `drive.readonly` |
-| 2026-11-15 | AI capture deferred to Phase 4 | Data model must settle first; not on the critical path | Build AI first |
-| 2026-11-15 | App name: Life Organiser | Chosen by owner | Hearth, Kin, Nest |
-| 2026-11-16 | **Reversed:** CSV upload replaces Drive in v1 | Same outcome without OAuth, token storage or refresh-token expiry; keeps the riskiest week tractable | Keep Drive; store uploads in blob storage |
-| 2026-11-16 | Component caching off (`cacheComponents`, `partialPrefetching`) | Fresh data while learning; stale data mimics a bug | Leave defaults on; learn caching deliberately later |
-| 2026-11-16 | `@types/node` tracks the runtime (^26) | The compiler should describe the machine it runs on | Leave at ^20 |
-| 2026-11-16 | Calendar days are ISO strings, arithmetic in `src/lib/dates.ts` | A day has no time or timezone; strings make the month-boundary bug impossible and tests readable | `Date` at UTC midnight; a wrapper class |
-| 2026-11-19 | Neon for the dev database as well as production; the CLI uses the **direct** connection | One provider, so local and deployed behave the same. Migrations cannot run through a pooled connection, so pooling is a deploy-time concern | Docker Postgres locally; deferred to a session of its own |
-| 2026-11-20 | `next-auth` pinned to **`5.0.0-beta.32`**, exactly | v5 is the line built for the App Router and React 19. An exact pin means a new beta cannot change behaviour under us mid-week | v4 (no App Router integration); hand-rolled signed-cookie sessions |
-| 2026-11-20 | **JWT sessions, `User` row created on first sign-in.** No Prisma adapter, so no `Account` or `Session` tables | Two tables instead of four, and nothing about our data takes Google's shape. Refresh tokens are not needed for sign-in only | Prisma adapter (conventional, adds two tables and a dependency) |
-| 2026-11-20 | The single v1 `Household` row is **inserted by hand once**; the app resolves the one that exists | Cheapest option while there is exactly one household. The seed script arrives with the demo household, not before | Seed script now; create-on-first-sign-in |
-| 2026-11-21 | **`@prisma/adapter-pg@7.10.1` + `pg`** as the Prisma driver adapter | Ordinary Postgres semantics, so dev and production behave identically, and it uses the direct connection string already in `.env.local`. Pooling stays Neon's job at deploy time | `@prisma/adapter-neon` (expects the pooled host, so dev and prod would differ); deferring again (blocks Week 1's acceptance test) |
+Rows carry an ID (`D1`, `D2`, …) that other documents cite — `docs/00-status.md`
+keeps the settled list. **Do not renumber**: append new rows at the end, even
+when a row reverses an earlier one. Two rows record a reversal: D10 reverses D7.
+
+| ID | Date | Decision | Why | Alternatives rejected |
+|---|---|---|---|---|
+| D1 | 2026-11-15 | Single Next.js app, no separate API | Fewer moving parts while learning; same concepts | Express + React SPA; tRPC monorepo |
+| D2 | 2026-11-15 | TypeScript strict | Type safety is the point of choosing TS | Plain JavaScript |
+| D3 | 2026-11-15 | PostgreSQL + Prisma | Relational data, readable migrations | SQLite; MongoDB; Drizzle |
+| D4 | 2026-11-15 | Money as signed integer cents | Removes float rounding bugs | `Float`; `Decimal` in app code |
+| D5 | 2026-11-15 | Google sign-in, two-email allowlist | No password handling; closed by default | Email magic links; passwords |
+| D6 | 2026-11-15 | Finances built first | User priority; hardest data modelling, best learning | Meals + groceries vertical slice |
+| D7 | 2026-11-15 | **Superseded by D10.** Drive via Picker + `drive.file` scope | Least privilege, simplest consent | `drive.readonly` |
+| D8 | 2026-11-15 | AI capture deferred to Phase 4 | Data model must settle first; not on the critical path | Build AI first |
+| D9 | 2026-11-15 | App name: Life Organiser | Chosen by owner | Hearth, Kin, Nest |
+| D10 | 2026-11-16 | **Reverses D7.** CSV upload replaces Drive in v1 | Same outcome without OAuth, token storage or refresh-token expiry; keeps the riskiest week tractable | Keep Drive; store uploads in blob storage |
+| D11 | 2026-11-16 | Component caching off (`cacheComponents`, `partialPrefetching`) | Fresh data while learning; stale data mimics a bug | Leave defaults on; learn caching deliberately later |
+| D12 | 2026-11-16 | `@types/node` tracks the runtime (^26) | The compiler should describe the machine it runs on | Leave at ^20 |
+| D13 | 2026-11-16 | Calendar days are ISO strings, arithmetic in `src/lib/dates.ts` | A day has no time or timezone; strings make the month-boundary bug impossible and tests readable | `Date` at UTC midnight; a wrapper class |
+| D14 | 2026-11-19 | Neon for the dev database as well as production; the CLI uses the **direct** connection | One provider, so local and deployed behave the same. Migrations cannot run through a pooled connection, so pooling is a deploy-time concern | Docker Postgres locally; deferred to a session of its own |
+| D15 | 2026-11-20 | `next-auth` pinned to **`5.0.0-beta.32`**, exactly | v5 is the line built for the App Router and React 19. An exact pin means a new beta cannot change behaviour under us mid-week | v4 (no App Router integration); hand-rolled signed-cookie sessions |
+| D16 | 2026-11-20 | **JWT sessions, `User` row created on first sign-in.** No Prisma adapter, so no `Account` or `Session` tables | Two tables instead of four, and nothing about our data takes Google's shape. Refresh tokens are not needed for sign-in only | Prisma adapter (conventional, adds two tables and a dependency) |
+| D17 | 2026-11-20 | The single v1 `Household` row is **inserted by hand once**; the app resolves the one that exists | Cheapest option while there is exactly one household. The seed script arrives with the demo household, not before | Seed script now; create-on-first-sign-in |
+| D18 | 2026-11-21 | **`@prisma/adapter-pg@7.10.1` + `pg`** as the Prisma driver adapter | Ordinary Postgres semantics, so dev and production behave identically, and it uses the direct connection string already in `.env.local`. Pooling stays Neon's job at deploy time | `@prisma/adapter-neon` (expects the pooled host, so dev and prod would differ); deferring again (blocks Week 1's acceptance test) |
+| D19 | 2026-11-23 | **Plain Tailwind for the app shell**; shadcn/ui is not introduced in Week 1 | The shell is a sidebar, bottom tabs and a placeholder — roughly forty lines. shadcn/ui is worth its dependency when the first component actually needs a dialog or a toast | shadcn/ui now (costs the session and delays the deploy); deferring the shell entirely (Week 1 ends with nothing on screen) |
 
 ## 13. Open technical questions
 

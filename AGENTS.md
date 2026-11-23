@@ -63,7 +63,8 @@ not need to be pre-taught.
    what is going into the repository before it goes in.
 4. **Commit, then push.** One logical change per commit.
 5. **Close.** Rewrite `docs/07-handover.md` with the next blocking decision at the
-   top and the session's architectural concept named.
+   top and the session's architectural concept named, and update
+   `docs/00-status.md` — position, what is settled, what is open.
 
 ## Decisions belong to the owner (added 15 Nov 2026)
 
@@ -72,12 +73,36 @@ including ones that seem obvious.
 
 For anything that is not pure execution detail, present:
 
-1. The decision, in one sentence.
+1. The decision, in one sentence — what actually needs choosing.
 2. Two or three realistic options.
-3. Your recommendation and **why**, including what could go wrong.
+3. **Your recommendation — always, never omitted, never "it depends".** For the
+   option you recommend, state what choosing it actually entails: what gets
+   built, added, removed, or changes hands. Then a brief summary of why, in one
+   or two sentences, including what could go wrong.
 4. What it costs to reverse later.
 
-Then stop and wait.
+Then stop and wait. A decision sent without a recommendation is not a decision
+put to Anthony — it is homework.
+
+### Check whether it is already decided (added 23 Nov 2026)
+
+Before putting a decision, search for it. Every settled decision has an ID
+(`D1`, `D2`, …). They are listed in `docs/00-status.md` under **SETTLED** and
+argued in `docs/03-architecture.md` §12, with the environments in §11.
+
+If a row already answers the question, it is settled: cite the ID and build on
+it. Do not re-open it, do not present it as a new choice, and do not write a plan
+that depends on reversing it.
+
+If two records disagree — a document against a document, or a document against
+what Anthony says the live system looks like — say so plainly and ask which is
+true. Never pick one silently, and never assume the document is right about the
+outside world: a Neon console, a Google client and Vercel are all state this
+repository cannot see.
+
+The same applies to position in the plan. If you cannot state the current
+milestone and build item in one line from `docs/00-status.md`, read
+`docs/04-roadmap.md` before saying anything.
 
 **Pure execution detail** — a variable name, formatting, which file a helper
 lives in — can proceed without asking, and should be noted in the summary.
@@ -91,6 +116,9 @@ unapproved items `(proposed)` and leave them that way until Anthony confirms.
 
 ## Answer these before you code
 
+0. Read `docs/00-status.md` — one page: the milestone, the build item, what is
+   settled and what is still open. State POSITION from it before proposing
+   anything. Not optional.
 1. Read `docs/01-product-brief.md` and `docs/02-features.md` — does the request
    fit an existing feature ID, or is it new scope?
 2. Read `docs/03-architecture.md` — does the request match a recorded decision?
@@ -169,6 +197,7 @@ comment aimed at a future reader of the file is enough.
 
 | File | Update when |
 |---|---|
+| `docs/00-status.md` | Every session, at the close — position, settled decisions, open questions |
 | `docs/02-features.md` | A feature's status changes |
 | `docs/03-architecture.md` | A technical decision is made or reversed |
 | `docs/04-roadmap.md` | A milestone slips or scope changes |

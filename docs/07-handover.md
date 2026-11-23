@@ -4,6 +4,11 @@
 **Next session:** Sunday 22 November, 30 minutes. Start at §0.1.
 Run `git status -sb` before anything else.
 
+> **Position lives in `docs/00-status.md`.** Read that first: one page, the
+> milestone and build item, the settled decisions (`D1`–`D19`) and what is still
+> open. This file is the detail behind it. A decision that appears in
+> `00-status.md` as settled is settled — cite it, do not re-open it.
+
 ---
 
 ## 0. Start here
