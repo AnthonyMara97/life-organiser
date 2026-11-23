@@ -12,17 +12,17 @@ type AppShellProps = {
 };
 
 const signOutStyle =
-  "rounded-md border border-neutral-300 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900";
+  "rounded-md border border-line px-3 py-2 text-xs font-medium text-ink-muted hover:bg-accent-soft hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
 export function AppShell({ email, children }: AppShellProps) {
   return (
     <div className="min-h-dvh">
       {/* Desktop: fixed sidebar */}
-      <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-neutral-200 bg-white p-4 md:flex">
-        <p className="px-3 pb-4 text-sm font-semibold">Life Organiser</p>
+      <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-line bg-surface p-4 md:flex">
+        <p className="px-3 pb-4 text-sm font-semibold text-ink">Life Organiser</p>
         <NavList variant="sidebar" />
         <div className="mt-auto space-y-3 px-3 pt-6">
-          <p className="truncate text-xs text-neutral-500" title={email}>
+          <p className="truncate text-xs text-ink-muted" title={email}>
             {email}
           </p>
           <form action={signOutOfGoogle}>
@@ -34,8 +34,8 @@ export function AppShell({ email, children }: AppShellProps) {
       </aside>
 
       {/* Phone: sticky header with the way out */}
-      <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-neutral-200 bg-white/90 px-4 backdrop-blur md:hidden">
-        <p className="text-sm font-semibold">Life Organiser</p>
+      <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-line bg-surface/90 px-4 backdrop-blur md:hidden">
+        <p className="text-sm font-semibold text-ink">Life Organiser</p>
         <form action={signOutOfGoogle}>
           <button type="submit" className={signOutStyle}>
             Sign out
@@ -52,7 +52,7 @@ export function AppShell({ email, children }: AppShellProps) {
 
       {/* Phone: fixed bottom tabs. Safe-area padding keeps the labels clear of
           the home indicator on an iPhone. */}
-      <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] md:hidden">
         <NavList variant="tabs" />
       </nav>
     </div>

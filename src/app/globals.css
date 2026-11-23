@@ -1,1 +1,64 @@
 @import "tailwindcss";
+
+/* Theme tokens.
+ *
+ * Every component names a role — canvas, surface, ink, line, accent — and the
+ * values below decide what that role looks like. Dark mode is one block that
+ * swaps the values, so no component carries a `dark:` variant and nothing in
+ * the markup knows which theme is running (D21).
+ *
+ * The scheme follows the operating system. There is no toggle and no stored
+ * preference, so there is no flash of the wrong theme on load. */
+:root {
+  color-scheme: light;
+
+  --canvas: #fafafa;
+  --surface: #ffffff;
+  --line: #e5e5e5;
+  --ink: #171717;
+  --ink-muted: #525252;
+  --ink-subtle: #a3a3a3;
+  --accent: #171717;
+  --on-accent: #ffffff;
+  --accent-soft: #f5f5f5;
+  --ring: #171717;
+  --danger: #b91c1c;
+  --danger-soft: #fef2f2;
+  --danger-line: #fecaca;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --canvas: #0a0a0a;
+    --surface: #171717;
+    --line: #2e2e2e;
+    --ink: #f5f5f5;
+    --ink-muted: #a3a3a3;
+    --ink-subtle: #6b6b6b;
+    --accent: #f5f5f5;
+    --on-accent: #171717;
+    --accent-soft: #262626;
+    --ring: #f5f5f5;
+    --danger: #fca5a5;
+    --danger-soft: #2a1313;
+    --danger-line: #7f1d1d;
+  }
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-subtle: var(--ink-subtle);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-ring: var(--ring);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-line: var(--danger-line);
+}
