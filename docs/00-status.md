@@ -12,6 +12,9 @@
 **POSITION:** Week 1 complete (23 Nov, deployed and signed in on a phone) ·
 **Week 2 not started** — it opens with the budget period model.
 
+**Deployed at:** `https://life-organiser-eight.vercel.app` (auto-deploys from
+`main`; production data on the Neon `production` branch).
+
 | | |
 |---|---|
 | **Done** | Database on Neon (19 Nov) · Auth.js + allowlist (20 Nov) · `User` provisioning (21 Nov) · separate `dev` data branch (23 Nov) · app shell closed against XC-3 (23 Nov) · **deployed to Vercel and signed in from a phone (23 Nov)** |

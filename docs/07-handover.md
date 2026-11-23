@@ -139,16 +139,19 @@ session-close commit.
 
 ---
 
-## 3. This week's plan — Thursday 19 to Sunday 22 November
+## 3. Week 1, as it happened — Thursday 19 to Monday 23 November
 
 | When | Hour | Goal |
 |---|---|---|
 | ~~Thu 19~~ | ~~1h~~ | ✅ Database decision, Neon created, first migration applied |
 | ~~Fri 20~~ | ~~1h~~ | ✅ Auth.js with Google, the `ALLOWED_EMAILS` allowlist, sign-in page |
 | ~~Sat 21~~ | ~~30m~~ | ✅ Household row by hand, adapter decision, `User` provisioning |
-| **Sun 22** | 30m | App shell at 390px, then deploy to Vercel and sign in from a phone |
+| ~~Sun 22~~ | — | Missed. |
+| ~~Mon 23~~ | 1h 30m | ✅ Shell closed against XC-3, `dev` branch, first deploy, phone sign-in |
 
-Week 1's acceptance test likely lands Monday. Acceptable at this pace.
+Sunday was missed, so Week 1 finished on Monday. Nothing was compressed to catch
+up. Week 2 starts at the next session and opens with the budget period decision
+(§4).
 
 ---
 
@@ -160,8 +163,8 @@ Week 1's acceptance test likely lands Monday. Acceptable at this pace.
    `ALLOWED_EMAILS`, redeploy, and have her sign in.
 2. **Week 2's opening decisions**, before any code: the budget period model, the
    two-tier ledger, and whether savings goals are P0.
-5. Add `db:seed` only when a demo household exists — deliberately absent now.
-6. When the budget period model is settled, write the period functions with
+3. Add `db:seed` only when a demo household exists — deliberately absent now.
+4. When the budget period model is settled, write the period functions with
    tests.
 
 ---
@@ -190,15 +193,18 @@ Everything lives inside Ubuntu, not Windows.
 | Provider | Neon, free tier, project `life-organiser` |
 | Region | AWS `ap-southeast-2` (Sydney) |
 | Database / role | `neondb` / `neondb_owner` |
-| Connection used | **Direct** (host has no `-pooler`), `sslmode=require` |
-| Where it lives | `DATABASE_URL` in `.env.local`, mode 600, never committed |
-| Migration | `prisma/migrations/20261119044104_init` — applied and verified |
-| Household row | ✅ `household_v1` — one row, inserted by hand 21 Nov |
+| Branches | `dev` (local development) and `production` (the deployed app) |
+| Local connection | branch `dev`, **direct** (host has no `-pooler`), `sslmode=require` |
+| Deployed connection | branch `production`, **pooled** (`-pooler`), `sslmode=verify-full`, set as a Vercel env var |
+| Where each lives | `.env.local` holds the `dev` string (mode 600, never committed); Vercel holds the `production` string |
+| Migration | `prisma/migrations/20261119044104_init` — applied to both branches |
+| Household row | ✅ `household_v1` — one per branch; `dev` was copied from `production` |
 | User rows | ✅ One, created by a real sign-in on 21 Nov |
 
-Pooling is deliberately **off** in the dev URL: `prisma migrate` cannot run
-through a pooled connection. At deploy time the app takes the pooled string as a
-Vercel environment variable.
+Pooling is deliberately **off** in the local URL: `prisma migrate` cannot run
+through a pooled connection. The deployed app takes the pooled `production`
+string, where pooling is what keeps many short-lived serverless connections from
+exhausting Postgres.
 
 ### Behaviours that waste time if forgotten
 
@@ -284,8 +290,9 @@ Vercel environment variable.
     listens on `*:3000` and Windows reaches it — try the literal IP before
     debugging Next or WSL port forwarding.
 15. **`pg` warns about `sslmode=require`** on every run: it currently behaves as
-    `verify-full`, and v9 will change what `require` means. The connection is
-    fine; use `verify-full` explicitly in the Vercel string.
+    `verify-full`, and v9 will change what `require` means. The local `dev` string
+    still says `require` (harmless, and matches what Neon generates); the Vercel
+    string says `verify-full` explicitly.
 
 ---
 
@@ -412,8 +419,8 @@ Written:
 Full sequence in `docs/reference/oauth-setup.md`. Google Cloud project
 `life-organiser`; app **Life Organiser**, External, **Testing**, one test user,
 no scopes added, AI-agent checkbox unticked. Client `Life Organiser web`,
-redirect URI `http://localhost:3000/api/auth/callback/google`. No production
-redirect URI yet.
+redirect URI `http://localhost:3000/api/auth/callback/google`. The production and
+`127.0.0.1` redirects were added on 23 Nov.
 
 ---
 
@@ -421,8 +428,9 @@ redirect URI yet.
 
 | File | Why |
 |---|---|
+| `docs/00-status.md` | **The position**, settled decisions and open questions. Read first |
 | `AGENTS.md` | Standing rules. Overrides general defaults |
-| This file | Current state and next actions |
+| This file | The detail behind the status page |
 | `docs/05-working-agreement.md` | How decisions are made and what "done" means |
 | `docs/04-roadmap.md` | Is the request the current milestone? |
 | `docs/03-architecture.md` | Is there a recorded decision this contradicts? |
