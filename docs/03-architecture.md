@@ -208,6 +208,7 @@ life-organiser/
 │  │  ├─ (app)/
 │  │  │  ├─ layout.tsx        # shell: sidebar + mobile tabs
 │  │  │  ├─ dashboard/page.tsx
+│  │  │  ├─ accounts/page.tsx
 │  │  │  ├─ transactions/
 │  │  │  │  ├─ page.tsx
 │  │  │  │  └─ [id]/page.tsx
@@ -409,6 +410,7 @@ when a row reverses an earlier one. Two rows record a reversal: D10 reverses D7.
 | D18 | 2026-11-21 | **`@prisma/adapter-pg@7.10.1` + `pg`** as the Prisma driver adapter | Ordinary Postgres semantics, so dev and production behave identically, and it uses the direct connection string already in `.env.local`. Pooling stays Neon's job at deploy time | `@prisma/adapter-neon` (expects the pooled host, so dev and prod would differ); deferring again (blocks Week 1's acceptance test) |
 | D19 | 2026-11-23 | **Plain Tailwind for the app shell**; shadcn/ui is not introduced in Week 1 | The shell is a sidebar, bottom tabs and a placeholder — roughly forty lines. shadcn/ui is worth its dependency when the first component actually needs a dialog or a toast | shadcn/ui now (costs the session and delays the deploy); deferring the shell entirely (Week 1 ends with nothing on screen) |
 | D20 | 2026-11-23 | **A separate Neon branch, `dev`, holds local data; `production` is for the deployed app** | `prisma migrate dev` can reset a database when it detects drift, and local experiments plus the two-person test must not touch the household's real rows. A branch is copy-on-write, so the storage cost is negligible | One branch for both (cheapest, but a bad migration destroys real data); a second Neon project (the console, the limits and the billing counted twice) |
+| D21 | 2026-11-23 | **Dark mode follows the operating system**; there is no in-app toggle | XC-3 asks for dark mode, not for a control. Swapping tokens under `prefers-color-scheme` means no stored preference, no second client island and no flash of the wrong theme — and every component names a role (canvas, surface, ink, line, accent) instead of a colour | A visible toggle (an explicit override, paid for with a cookie read to avoid the flash); automatic plus override (most flexible, most work) |
 
 ## 13. Open technical questions
 

@@ -9,13 +9,13 @@
 
 ---
 
-**POSITION:** Week 1 of 16 · build item 3 of 4 (the shell) · next: finish XC-3,
-then deploy, then the phone test.
+**POSITION:** Week 1 of 16 · build item 4 of 4 (the deploy) · next: Vercel
+project, production env vars, redirect URI, then the phone sign-in.
 
 | | |
 |---|---|
-| **Done** | Database on Neon (19 Nov) · Auth.js + allowlist (20 Nov) · `User` provisioning (21 Nov) · shell committed (23 Nov) · separate `dev` data branch (23 Nov) |
-| **In progress** | App shell — committed `e1c7571` on 23 Nov, **short of XC-3**: no dark mode, and the dashboard is at `/` rather than `/dashboard` |
+| **Done** | Database on Neon (19 Nov) · Auth.js + allowlist (20 Nov) · `User` provisioning (21 Nov) · separate `dev` data branch (23 Nov) · app shell closed against XC-3 (23 Nov) |
+| **In progress** | — |
 | **Not started** | Deploy to Vercel · two-person allowlist test |
 | **Unverified** | A non-allowlisted sign-in at runtime · the second account (blocked on his wife's Google account) |
 
@@ -25,11 +25,7 @@ Each of these must be put to Anthony in the standard shape — the decision, two
 three options, a recommendation stating what it entails and why, the cost to
 reverse. Never as a bare question.
 
-1. **How to close the shell's XC-3 gap.** Dark mode is a token-only
-   `prefers-color-scheme` pass or a visible toggle; the dashboard moves from `/`
-   to `/dashboard`. Anthony's instruction is "fix then deploy", so this comes
-   first. The shape of dark mode is his to choose.
-2. **Week 2 blockers, from 21 Nov:** the budget period model (fortnightly,
+1. **Week 2 blockers, from 21 Nov:** the budget period model (fortnightly,
    monthly, two-tier), the two-tier ledger (`needs_review` / `confirmed`), and
    whether savings goals are P0.
 
@@ -59,6 +55,7 @@ Full reasoning in `03-architecture.md` §12; environments in §11. Cite the ID.
 | D18 | `@prisma/adapter-pg@7.10.1` + `pg` as the driver adapter |
 | D19 | Plain Tailwind for the app shell; no shadcn/ui in Week 1 |
 | D20 | A `dev` Neon branch holds local data; `production` is for the deployed app |
+| D21 | Dark mode follows the OS; no in-app toggle |
 
 **When a document and the live system disagree, the live system wins — say so and
 ask.** Neon, Google Cloud and Vercel hold state this repository cannot see. A

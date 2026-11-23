@@ -23,8 +23,10 @@ hour. What landed:
 - **The shell**, committed `e1c7571` and verified against a real Google session:
   the `(app)` layout gates on `auth()`, the desktop sidebar and the 390px bottom
   tab bar render, the active nav link follows the URL. Plain Tailwind (D19).
-- **Short of XC-3, so not closed:** no dark mode, the dashboard is at `/` rather
-  than `/dashboard`, and the nav omits Reports and Settings.
+- **XC-3 closed on 23 Nov:** the dashboard lives at `/dashboard` (`/` redirects),
+  dark mode follows the operating system with no toggle (D21), the sidebar lists
+  seven areas and the phone bar keeps the five that fit, and the sign-in page
+  uses the same tokens including the `AccessDenied` state.
 - **`prisma generate` moved from `postinstall` into `build`** (`8d9df39`), so an
   install on a machine without `.env.local` no longer fails.
 - **The deploy runbook deleted** (`747bfda`) — it described a production branch
@@ -33,9 +35,9 @@ hour. What landed:
   reserved for the deployed app. Both branches carry the same single migration
   and the same single household row.
 
-### 0.2 The deploy, once XC-3 is closed
+### 0.2 The deploy, and Week 1's acceptance test
 
-Anthony's instruction is "fix then deploy", so this waits on the shell gap.
+Week 1 ends when Anthony signs in from his phone on the deployed URL.
 
 1. Create the Vercel project from `github.com/AnthonyMara97/life-organiser`.
 2. Add the production redirect URI to the Google OAuth client:
@@ -107,7 +109,7 @@ acceptance test, and it is the only part of XC-1 not yet evidenced.
 | `Household` row | ✅ One row, `household_v1`, inserted by hand 21 Nov |
 | **`User` provisioning** | ✅ Built and verified 21 Nov — one row, one household, no orphans |
 | Two-person test | ❌ Blocked on his wife's account (§0.3) |
-| App UI | ⚠️ Shell committed and verified 23 Nov; short of XC-3 (no dark mode, `/` instead of `/dashboard`) |
+| App UI | ✅ Shell closed against XC-3 on 23 Nov — sidebar, phone tabs, OS dark mode, `/dashboard` |
 | Deployment | ❌ Not started — Vercel account exists, no project imported |
 | GitHub remote | ✅ `github.com/AnthonyMara97/life-organiser` |
 | Roadmap | ✅ 6 hours/week, 16 weeks |
@@ -149,14 +151,11 @@ Week 1's acceptance test likely lands Monday. Acceptable at this pace.
 
 ## 4. Next actions, in order
 
-1. **Close the shell's XC-3 gap** — dark mode, the dashboard moved to
-   `/dashboard`, and the nav completed with Reports and Settings. Anthony's
-   instruction is "fix then deploy", so this comes before anything else.
-2. Deploy to Vercel: production redirect URI in the OAuth client, **pooled**
-   Neon string plus `AUTH_SECRET`, `ALLOWED_EMAILS`, `AUTH_GOOGLE_ID`,
-   `AUTH_GOOGLE_SECRET` as environment variables.
-3. Sign in on a phone at the deployed URL — Week 1's acceptance test.
-4. Have his wife sign in **before** her address is allowlisted; confirm
+1. Deploy to Vercel: production redirect URI in the OAuth client, **pooled**
+   Neon string from the `production` branch plus `AUTH_SECRET`, `ALLOWED_EMAILS`,
+   `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` as environment variables.
+2. Sign in on a phone at the deployed URL — Week 1's acceptance test.
+3. Have his wife sign in **before** her address is allowlisted; confirm
    `AccessDenied` and `User` count unchanged; then allowlist her.
 5. Add `db:seed` only when a demo household exists — deliberately absent now.
 6. When the budget period model is settled, write the period functions with
