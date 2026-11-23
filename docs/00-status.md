@@ -14,7 +14,7 @@ then deploy, then the phone test.
 
 | | |
 |---|---|
-| **Done** | Database on Neon (19 Nov) · Auth.js + allowlist (20 Nov) · `User` provisioning (21 Nov) |
+| **Done** | Database on Neon (19 Nov) · Auth.js + allowlist (20 Nov) · `User` provisioning (21 Nov) · shell committed (23 Nov) · separate `dev` data branch (23 Nov) |
 | **In progress** | App shell — committed `e1c7571` on 23 Nov, **short of XC-3**: no dark mode, and the dashboard is at `/` rather than `/dashboard` |
 | **Not started** | Deploy to Vercel · two-person allowlist test |
 | **Unverified** | A non-allowlisted sign-in at runtime · the second account (blocked on his wife's Google account) |
@@ -25,16 +25,11 @@ Each of these must be put to Anthony in the standard shape — the decision, two
 three options, a recommendation stating what it entails and why, the cost to
 reverse. Never as a bare question.
 
-1. **`docs/reference/deploy-runbook.md`** — delete it, rewrite it, or land it as
-   written. Its opening paragraph states a database decision that is not true
-   (it says production is a separate branch; there is one branch, `production`).
-2. **`postinstall: prisma generate`** — keep it as an install hook, or move the
-   same command into `build`. As an install hook it can fail on a machine with no
-   `.env.local`, because `prisma.config.ts` reads `DATABASE_URL` eagerly.
-3. **Environments.** §11 describes Local, Preview and Production separately. In
-   reality one Neon branch named `production` serves both local and deployed, so
-   local experiments and the deployed household share rows.
-4. **Week 2 blockers, from 21 Nov:** the budget period model (fortnightly,
+1. **How to close the shell's XC-3 gap.** Dark mode is a token-only
+   `prefers-color-scheme` pass or a visible toggle; the dashboard moves from `/`
+   to `/dashboard`. Anthony's instruction is "fix then deploy", so this comes
+   first. The shape of dark mode is his to choose.
+2. **Week 2 blockers, from 21 Nov:** the budget period model (fortnightly,
    monthly, two-tier), the two-tier ledger (`needs_review` / `confirmed`), and
    whether savings goals are P0.
 
@@ -63,6 +58,7 @@ Full reasoning in `03-architecture.md` §12; environments in §11. Cite the ID.
 | D17 | The single `Household` row is inserted by hand once |
 | D18 | `@prisma/adapter-pg@7.10.1` + `pg` as the driver adapter |
 | D19 | Plain Tailwind for the app shell; no shadcn/ui in Week 1 |
+| D20 | A `dev` Neon branch holds local data; `production` is for the deployed app |
 
 **When a document and the live system disagree, the live system wins — say so and
 ask.** Neon, Google Cloud and Vercel hold state this repository cannot see. A

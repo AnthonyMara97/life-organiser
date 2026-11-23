@@ -1,11 +1,13 @@
 # 07 — Session Handover
 
-**Last updated:** 21 November 2026, end of the Saturday provisioning session.
-**Next session:** Sunday 22 November, 30 minutes. Start at §0.1.
+**Last updated:** 23 November 2026, mid-session (Monday). The Sunday session was
+missed, so this one combined it with Monday's hour. Rewritten in full at close.
+**Next action:** `00-status.md` is the position. Close the shell's XC-3 gap, then
+deploy.
 Run `git status -sb` before anything else.
 
 > **Position lives in `docs/00-status.md`.** Read that first: one page, the
-> milestone and build item, the settled decisions (`D1`–`D19`) and what is still
+> milestone and build item, the settled decisions (`D1`–`D20`) and what is still
 > open. This file is the detail behind it. A decision that appears in
 > `00-status.md` as settled is settled — cite it, do not re-open it.
 
@@ -13,48 +15,43 @@ Run `git status -sb` before anything else.
 
 ## 0. Start here
 
-### 0.1 Sunday: the app shell, then the deploy
+### 0.1 Where the weekend session got to
 
-**Open with one decision: does the shell introduce shadcn/ui, or stay plain
-Tailwind?**
+The Sunday session was missed; Monday 23 November combined it with that day's
+hour. What landed:
 
-- **Plain Tailwind for the shell** *(recommended)*. The login page already does
-  this and the shell is a sidebar, bottom tabs and a placeholder — roughly forty
-  lines. shadcn/ui arrives in Week 3, where the quick-add form and the undo
-  toast actually need a dialog, and it arrives with a real component to justify
-  the dependency.
-- **shadcn/ui now.** Sets the component conventions before there is much UI to
-  retrofit. Costs the rest of the session: initialise the CLI, add components,
-  agree where they live.
-- **Defer the shell.** Cheapest, but Week 1 has nothing on screen to show for
-  itself.
+- **The shell**, committed `e1c7571` and verified against a real Google session:
+  the `(app)` layout gates on `auth()`, the desktop sidebar and the 390px bottom
+  tab bar render, the active nav link follows the URL. Plain Tailwind (D19).
+- **Short of XC-3, so not closed:** no dark mode, the dashboard is at `/` rather
+  than `/dashboard`, and the nav omits Reports and Settings.
+- **`prisma generate` moved from `postinstall` into `build`** (`8d9df39`), so an
+  install on a machine without `.env.local` no longer fails.
+- **The deploy runbook deleted** (`747bfda`) — it described a production branch
+  that did not exist at the time.
+- **`.env.local` moved onto the `dev` Neon branch** (D20); `production` is now
+  reserved for the deployed app. Both branches carry the same single migration
+  and the same single household row.
 
-Recommendation is the first. Cost to reverse: adopting shadcn/ui later is a CLI
-command and moving markup into its components — no data or routing changes.
+### 0.2 The deploy, once XC-3 is closed
 
-**Then the shell**, at 390px first: sidebar on desktop, bottom tabs on phone, a
-placeholder dashboard, and the sign-in page checked at phone width. The session
-must stay server-rendered; `auth()` already provides `householdId` (§2).
-
-**Then the deploy**, in this order:
+Anthony's instruction is "fix then deploy", so this waits on the shell gap.
 
 1. Create the Vercel project from `github.com/AnthonyMara97/life-organiser`.
 2. Add the production redirect URI to the Google OAuth client:
    `https://<vercel-domain>/api/auth/callback/google`. Google Console → the
-   `Life Organiser web` client → Authorised redirect URIs.
-3. Vercel environment variables: `DATABASE_URL` (**pooled** — the `-pooler`
-   host, unlike dev), `AUTH_SECRET`, `ALLOWED_EMAILS`, `AUTH_GOOGLE_ID`,
-   `AUTH_GOOGLE_SECRET`. Use `sslmode=verify-full` in the pooled string rather
-   than `require`; `pg` currently treats `require` as `verify-full` but warns
-   that version 9 will change that.
-4. Deploy, then open the URL on a phone and sign in.
+   `Life Organiser web` client → Authorised redirect URIs. Add
+   `http://127.0.0.1:3000/api/auth/callback/google` in the same visit — that host
+   has already failed once with `redirect_uri_mismatch`.
+3. Vercel environment variables: `DATABASE_URL` (**pooled** — the `-pooler` host
+   of the `production` branch), `AUTH_SECRET`, `ALLOWED_EMAILS`,
+   `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`. Use `sslmode=verify-full` in the
+   pooled string rather than `require`; `pg` treats `require` as `verify-full`
+   today but warns that version 9 will not.
+4. Deploy, then open the URL on a phone and sign in. That phone sign-in is
+   Week 1's acceptance test.
 
-**Schedule, honestly:** Sunday is 30 minutes and now carries a decision, the
-shell and the deploy. Week 1's acceptance test — signing in from a phone on the
-deployed URL — will most likely land on Monday. Do not compress two weeks to
-catch up.
-
-### 0.2 Still open, and needed before Week 2
+### 0.3 Still open, and needed before Week 2
 
 **The budget period model** — fortnightly, monthly, or two-tier. Blocks the
 period functions. `BudgetPeriod` stays marked `(proposed)` in
@@ -102,16 +99,16 @@ acceptance test, and it is the only part of XC-1 not yet evidenced.
 | `src/lib/dates.ts` | ✅ Written, tested. **Do not re-teach it** |
 | Prisma | ✅ 7.10.1, client generated, CLI loads `.env.local` |
 | Prisma driver adapter | ✅ `@prisma/adapter-pg@7.10.1` + `pg@8.23.1`, in `src/lib/db.ts` |
-| Database | ✅ Neon dev project, Sydney. Migration applied |
+| Database | ✅ Neon project, Sydney. Branch `production` (for the deployed app) and `dev` (local). One migration applied to both |
 | Google OAuth client | ✅ Created 19 Nov, Publishing status Testing |
 | **Auth.js** | ✅ `next-auth@5.0.0-beta.32`, pinned exactly |
 | Allowlist | ✅ Enforced server-side in `signIn`; 8 tests |
 | Sign-in page | ✅ `/login` renders and redirects to Google |
 | `Household` row | ✅ One row, `household_v1`, inserted by hand 21 Nov |
 | **`User` provisioning** | ✅ Built and verified 21 Nov — one row, one household, no orphans |
-| Two-person test | ❌ Blocked on his wife's account (§0.2) |
-| App UI | ❌ Placeholder page showing the session; no shell |
-| Deployment | ❌ Not started |
+| Two-person test | ❌ Blocked on his wife's account (§0.3) |
+| App UI | ⚠️ Shell committed and verified 23 Nov; short of XC-3 (no dark mode, `/` instead of `/dashboard`) |
+| Deployment | ❌ Not started — Vercel account exists, no project imported |
 | GitHub remote | ✅ `github.com/AnthonyMara97/life-organiser` |
 | Roadmap | ✅ 6 hours/week, 16 weeks |
 
@@ -152,9 +149,9 @@ Week 1's acceptance test likely lands Monday. Acceptable at this pace.
 
 ## 4. Next actions, in order
 
-1. **Sunday first:** put the shadcn/ui decision to him (§0.1), then build the
-   app shell — sidebar on desktop, bottom tabs on phone, placeholder dashboard,
-   sign-in page at 390px.
+1. **Close the shell's XC-3 gap** — dark mode, the dashboard moved to
+   `/dashboard`, and the nav completed with Reports and Settings. Anthony's
+   instruction is "fix then deploy", so this comes before anything else.
 2. Deploy to Vercel: production redirect URI in the OAuth client, **pooled**
    Neon string plus `AUTH_SECRET`, `ALLOWED_EMAILS`, `AUTH_GOOGLE_ID`,
    `AUTH_GOOGLE_SECRET` as environment variables.
@@ -341,7 +338,7 @@ Verified:
 - Second sign-in updated the row rather than adding one.
 - **Not yet verified at runtime:** a non-allowlisted address. The branch returns
   `false` before any query, and the allowlist tests cover the decision — but the
-  evidence comes on Sunday (§0.2).
+  evidence comes with the two-person test (§0.3).
 
 Committed as `d78898a`; `0de9b41` closed the session. Both pushed after Anthony
 unlocked the SSH key, and `origin/main` was confirmed at `0de9b41`.

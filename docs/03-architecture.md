@@ -370,9 +370,13 @@ coverage.
 
 | Environment | App | Database | Data |
 |---|---|---|---|
-| Local | `pnpm dev` | Neon dev project (Sydney), direct connection | Seeded demo household |
-| Preview | Vercel preview per branch | Neon branch (optional) | Seeded demo household |
-| Production | Vercel | Neon production | Real household, writes enabled |
+| Local | `pnpm dev` | Neon project `life-organiser`, branch **`dev`**, direct connection | A copy of `production` taken when the branch was created; disposable |
+| Preview | Vercel preview per branch | No preview branch yet — a preview deploy needs a branch of its own before it can be used | — |
+| Production | Vercel | Neon project `life-organiser`, branch **`production`**, pooled connection | Real household, writes enabled |
+
+Local and production are **branches of one Neon project**, not separate
+projects (D20). A branch is copy-on-write: it starts as the parent's data, and
+storage only grows with what differs.
 
 Migrations: `prisma migrate dev` locally, `prisma migrate deploy` in CI before
 production promotion. Never edit a migration that has been applied.
@@ -404,6 +408,7 @@ when a row reverses an earlier one. Two rows record a reversal: D10 reverses D7.
 | D17 | 2026-11-20 | The single v1 `Household` row is **inserted by hand once**; the app resolves the one that exists | Cheapest option while there is exactly one household. The seed script arrives with the demo household, not before | Seed script now; create-on-first-sign-in |
 | D18 | 2026-11-21 | **`@prisma/adapter-pg@7.10.1` + `pg`** as the Prisma driver adapter | Ordinary Postgres semantics, so dev and production behave identically, and it uses the direct connection string already in `.env.local`. Pooling stays Neon's job at deploy time | `@prisma/adapter-neon` (expects the pooled host, so dev and prod would differ); deferring again (blocks Week 1's acceptance test) |
 | D19 | 2026-11-23 | **Plain Tailwind for the app shell**; shadcn/ui is not introduced in Week 1 | The shell is a sidebar, bottom tabs and a placeholder — roughly forty lines. shadcn/ui is worth its dependency when the first component actually needs a dialog or a toast | shadcn/ui now (costs the session and delays the deploy); deferring the shell entirely (Week 1 ends with nothing on screen) |
+| D20 | 2026-11-23 | **A separate Neon branch, `dev`, holds local data; `production` is for the deployed app** | `prisma migrate dev` can reset a database when it detects drift, and local experiments plus the two-person test must not touch the household's real rows. A branch is copy-on-write, so the storage cost is negligible | One branch for both (cheapest, but a bad migration destroys real data); a second Neon project (the console, the limits and the billing counted twice) |
 
 ## 13. Open technical questions
 
