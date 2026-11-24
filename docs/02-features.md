@@ -47,6 +47,9 @@ reconciled.
 
 The core record. Everything else is derived from it.
 
+> Status 24 Nov 2026: the quick-add expense form is built. Edit/delete,
+> transfers and the filters remain.
+
 - Fields: date, amount (signed cents), account, category, merchant/description,
   note, created by, source (`manual` / `import` / `ai`), status
   (`needs_review` / `confirmed`).

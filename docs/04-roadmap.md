@@ -137,6 +137,9 @@ timestamps — do not let `new Date()` sneak in.
 
 **Focus:** the full CRUD loop, done properly.
 
+> 24 Nov 2026: the quick-add expense form is built (expense-only). Edit/delete,
+> category management and filters remain.
+
 **Build**
 - Quick-add transaction form (amount, category, account, date, description).
 - Zod schema shared by form and server action.

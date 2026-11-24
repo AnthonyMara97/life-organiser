@@ -9,18 +9,19 @@
 
 ---
 
-**POSITION:** Week 1 complete (23 Nov, deployed and signed in on a phone) ·
-**Week 2 not started** — it opens with the budget period model.
+**POSITION:** Week 2 complete (schema + transactions list) · **Week 3 started** —
+the quick-add expense form is shipped; edit/delete with undo, category management
+and filters remain · deployed with the Phase 1 schema.
 
 **Deployed at:** `https://life-organiser-eight.vercel.app` (auto-deploys from
 `main`; production data on the Neon `production` branch).
 
 | | |
 |---|---|
-| **Done** | Database on Neon (19 Nov) · Auth.js + allowlist (20 Nov) · `User` provisioning (21 Nov) · separate `dev` data branch (23 Nov) · app shell closed against XC-3 (23 Nov) · **deployed to Vercel and signed in from a phone (23 Nov)** |
-| **In progress** | — |
-| **Not started** | Week 2 (budget periods) · two-person allowlist test |
-| **Unverified** | A non-allowlisted sign-in at runtime · the second account (blocked on his wife's Google account) |
+| **Done** | Database on Neon (19 Nov) · Auth.js + allowlist (20 Nov) · `User` provisioning (21 Nov) · separate `dev` data branch (23 Nov) · app shell closed against XC-3 (23 Nov) · **deployed and signed in from a phone (23 Nov)** · **two-person allowlist test (24 Nov)** · **Phase 1 finance schema + production migration (24 Nov)** · **transactions list (24 Nov)** · **quick-add expense form (24 Nov)** |
+| **In progress** | Week 3 — edit/delete with a 10-second undo, category management, filters |
+| **Not started** | The rest of Week 3 · bills (W8), CSV import (W9), income allocation (W10), hardening (W11) |
+| **Unverified** | The quick-add form on the deployed app: production has no accounts or categories yet, so it shows the setup note · transfer pairing in CSV import · the two-tier ledger for imported rows |
 
 ## Awaiting decision
 
@@ -28,9 +29,13 @@ Each of these must be put to Anthony in the standard shape — the decision, two
 three options, a recommendation stating what it entails and why, the cost to
 reverse. Never as a bare question.
 
-1. **Week 2 blockers, from 21 Nov:** the budget period model (fortnightly,
-   monthly, two-tier), the two-tier ledger (`needs_review` / `confirmed`), and
-   whether savings goals are P0.
+1. **Week 3 edit/delete: the undo model and whether to introduce shadcn/ui now.**
+   D19 deferred shadcn; the dialog and toast are the first real use. The 10-second
+   undo needs either a soft delete or a client-side delayed delete — a data-model
+   choice, not syntax.
+2. **The two-tier ledger** (`needs_review` / `confirmed`): whether the monthly
+   overview counts imported rows before review. Deferred from 21 Nov; it now
+   affects real numbers.
 
 ## Settled — do not re-ask, do not present as a choice
 
@@ -60,7 +65,24 @@ Full reasoning in `03-architecture.md` §12; environments in §11. Cite the ID.
 | D20 | A `dev` Neon branch holds local data; `production` is for the deployed app |
 | D21 | Dark mode follows the OS; no in-app toggle |
 | D22 | Vercel env vars are Production-only; previews have no database |
+| D23 | Monthly budget periods, with allocation triggered by each income event |
+| D24 | FIN-12 income allocation is P1; AI capture is cut from the 16-week plan |
+| D25 | `Transaction.billId` links a payment to the bill it settles |
+| D26 | One household savings target (amount + date); no goals module |
 
 **When a document and the live system disagree, the live system wins — say so and
 ask.** Neon, Google Cloud and Vercel hold state this repository cannot see. A
 patch of this repo is not evidence about any of them.
+
+## Housekeeping
+
+- **`ALLOWED_EMAILS` is still type Secret** (write-only) unless it has been
+  recreated. The value now holds both addresses, but the type caused the 24 Nov
+  lockout. Recreate it as **Config** when convenient; it is an email list, not a
+  credential.
+- **The `dev` branch carries a temporary fixture:** 3 accounts, 6 categories,
+  3 budget periods and 26 fictional transactions (25 fixture rows plus one
+  quick-add test). Delete it after the first real data import. Production has
+  **0** finance rows.
+- **`pnpm db:seed` remains deferred** until the demo household exists (XC-4); a
+  second household would break `provisionUser`'s single-household rule.
