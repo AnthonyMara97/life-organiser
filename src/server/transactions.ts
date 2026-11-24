@@ -89,3 +89,29 @@ export async function listTransactionsForMonth(
     pageCount,
   };
 }
+
+export type QuickAddOption = { id: string; name: string };
+
+/**
+ * The choices the quick-add form needs. Only active accounts and expense
+ * categories: the form records money out, and income arrives through imports
+ * and FIN-12.
+ */
+export async function getQuickAddOptions(
+  householdId: string,
+): Promise<{ accounts: QuickAddOption[]; categories: QuickAddOption[] }> {
+  const [accounts, categories] = await Promise.all([
+    db.account.findMany({
+      where: { householdId, archivedAt: null },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: { id: true, name: true },
+    }),
+    db.category.findMany({
+      where: { householdId, kind: "expense", archivedAt: null },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      select: { id: true, name: true },
+    }),
+  ]);
+
+  return { accounts, categories };
+}

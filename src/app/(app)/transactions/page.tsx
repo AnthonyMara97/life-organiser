@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
+import { QuickAddForm } from "@/components/transactions/quick-add-form";
 import {
   addMonthsClamped,
   formatDayLabel,
@@ -11,7 +12,10 @@ import {
   todayInTimeZone,
 } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
-import { listTransactionsForMonth } from "@/server/transactions";
+import {
+  getQuickAddOptions,
+  listTransactionsForMonth,
+} from "@/server/transactions";
 
 export const metadata: Metadata = { title: "Transactions — Life Organiser" };
 
@@ -52,14 +56,18 @@ export default async function TransactionsPage({
   const params = await searchParams;
   const month =
     params.month && isMonth(params.month) ? params.month : currentMonth();
-  const result = await listTransactionsForMonth(
-    householdId,
-    month,
-    parsePage(params.page),
-    PAGE_SIZE,
-  );
+  const [result, options] = await Promise.all([
+    listTransactionsForMonth(
+      householdId,
+      month,
+      parsePage(params.page),
+      PAGE_SIZE,
+    ),
+    getQuickAddOptions(householdId),
+  ]);
 
   const monthLabel = formatMonthLabel(month);
+  const today = todayInTimeZone();
   const thisMonth = currentMonth();
   const previousMonth = addMonthsClamped(`${month}-01`, -1).slice(0, 7);
   const nextMonth = addMonthsClamped(`${month}-01`, 1).slice(0, 7);
@@ -117,6 +125,19 @@ export default async function TransactionsPage({
           ) : null}
         </div>
       </div>
+
+      {options.accounts.length > 0 && options.categories.length > 0 ? (
+        <QuickAddForm
+          accounts={options.accounts}
+          categories={options.categories}
+          today={today}
+        />
+      ) : (
+        <p className="rounded-lg border border-dashed border-line bg-surface px-4 py-4 text-sm text-ink-muted">
+          Add an account and an expense category before recording a
+          transaction.
+        </p>
+      )}
 
       {result.totalCount === 0 ? (
         <div className="rounded-lg border border-dashed border-line bg-surface px-6 py-12 text-center">
