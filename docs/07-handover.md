@@ -79,10 +79,11 @@ verified with a **temporary fixture** in `dev` instead: 3 accounts, 6 categories
 3 budget periods, 26 fictional transactions (25 fixture rows + one quick-add
 test). Delete it after the first real data import — Anthony's instruction.
 
-**`ALLOWED_EMAILS` is still type Secret** (write-only) unless it has been
-recreated. The value holds both addresses, but the type caused today's lockout:
-the edit form shows an empty value and saving replaces the whole list. Recreate
-it as **Config** when convenient; it is an email list, not a credential.
+**`ALLOWED_EMAILS` is now type Config** (recreated 24 Nov; one Production row,
+readable with Reveal Value). The value holds both addresses. The Secret type was
+the cause of today's lockout: the edit form showed an empty value and saving
+replaced the whole list. Keep this variable Config — it is an email list, not a
+credential.
 
 ---
 
@@ -258,8 +259,9 @@ exhausting Postgres. Migration commands need the **direct** production string.
     the value started with `DATABASE_URL="…"`. Normalise before use; do not print
     the value.
 18. **`ALLOWED_EMAILS` was a Secret** and Secret values are write-only: the edit
-    form shows an empty field and saving replaces the whole list. That locked
-    both users out on 24 Nov. Recreate it as **Config** when convenient.
+    form showed an empty field and saving replaced the whole list. That locked
+    both users out on 24 Nov. It was recreated as **Config** the same day; keep
+    it Config.
 19. **Vitest needs the `@/` alias.** `vitest.config.mts` maps `@` to `./src`;
     without it, a tested module that imports `@/lib/...` fails only under test.
 
@@ -278,7 +280,7 @@ exhausting Postgres. Migration commands need the **direct** production string.
 - The Vercel `ALLOWED_EMAILS` turned out to be a **Secret**, so the value was
   never visible; Anthony had replaced it with her address and locked both users
   out. The value now holds both addresses, and both accounts reach the dashboard.
-- The variable is still type Secret. Recreate as Config (see §0.3).
+- The variable is now type Config (recreated 24 Nov; see §0.3).
 
 **Decisions**
 

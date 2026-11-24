@@ -76,10 +76,9 @@ patch of this repo is not evidence about any of them.
 
 ## Housekeeping
 
-- **`ALLOWED_EMAILS` is still type Secret** (write-only) unless it has been
-  recreated. The value now holds both addresses, but the type caused the 24 Nov
-  lockout. Recreate it as **Config** when convenient; it is an email list, not a
-  credential.
+- **`ALLOWED_EMAILS` is now type Config** (recreated 24 Nov; one Production row,
+  readable with Reveal Value). The value holds both addresses. The Secret type
+  was the cause of the 24 Nov lockout — keep this one Config.
 - **The `dev` branch carries a temporary fixture:** 3 accounts, 6 categories,
   3 budget periods and 26 fictional transactions (25 fixture rows plus one
   quick-add test). Delete it after the first real data import. Production has
