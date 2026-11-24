@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { addDays, addMonthsClamped, daysBetween } from "../src/lib/dates";
+import {
+  addDays,
+  addMonthsClamped,
+  daysBetween,
+  formatDayLabel,
+  formatMonthLabel,
+  isMonth,
+  isoDay,
+  monthBounds,
+  todayInTimeZone,
+} from "../src/lib/dates";
 
 describe("addDays", () => {
   it("moves forward and backward within a month", () => {
@@ -90,5 +100,101 @@ describe("invalid input", () => {
     expect(() => addMonthsClamped("2026-04-31", 1)).toThrow(
       /not a real calendar day/,
     );
+  });
+});
+
+describe("todayInTimeZone", () => {
+  it("uses the Melbourne day, not the UTC day", () => {
+    // 2026-11-23 12:59 UTC is 23:59 in Melbourne (AEDT, +11).
+    expect(
+      todayInTimeZone(
+        "Australia/Melbourne",
+        new Date("2026-11-23T12:59:00Z"),
+      ),
+    ).toBe("2026-11-23");
+    // 13:00 UTC is midnight, so the household's day has rolled over.
+    expect(
+      todayInTimeZone(
+        "Australia/Melbourne",
+        new Date("2026-11-23T13:00:00Z"),
+      ),
+    ).toBe("2026-11-24");
+  });
+
+  it("handles the other side of daylight saving", () => {
+    // June is AEST (+10), so midnight is 14:00 UTC.
+    expect(
+      todayInTimeZone(
+        "Australia/Melbourne",
+        new Date("2026-06-30T13:59:00Z"),
+      ),
+    ).toBe("2026-06-30");
+    expect(
+      todayInTimeZone(
+        "Australia/Melbourne",
+        new Date("2026-06-30T14:00:00Z"),
+      ),
+    ).toBe("2026-07-01");
+  });
+});
+
+describe("isMonth", () => {
+  it("accepts a real YYYY-MM", () => {
+    expect(isMonth("2026-11")).toBe(true);
+    expect(isMonth("2026-01")).toBe(true);
+    expect(isMonth("2026-12")).toBe(true);
+  });
+
+  it("rejects anything else", () => {
+    expect(isMonth("2026-13")).toBe(false);
+    expect(isMonth("2026-00")).toBe(false);
+    expect(isMonth("2026-1")).toBe(false);
+    expect(isMonth("2026-11-01")).toBe(false);
+    expect(isMonth("November 2026")).toBe(false);
+  });
+});
+
+describe("monthBounds", () => {
+  it("returns the first and last day, inclusive", () => {
+    expect(monthBounds("2026-11")).toEqual({
+      start: "2026-11-01",
+      end: "2026-11-30",
+    });
+    expect(monthBounds("2026-12")).toEqual({
+      start: "2026-12-01",
+      end: "2026-12-31",
+    });
+  });
+
+  it("knows February in common and leap years", () => {
+    expect(monthBounds("2026-02")).toEqual({
+      start: "2026-02-01",
+      end: "2026-02-28",
+    });
+    expect(monthBounds("2028-02")).toEqual({
+      start: "2028-02-01",
+      end: "2028-02-29",
+    });
+  });
+
+  it("refuses a malformed month", () => {
+    expect(() => monthBounds("2026-13")).toThrow(/YYYY-MM/);
+  });
+});
+
+describe("isoDay", () => {
+  it("reads the UTC day from a @db.Date value", () => {
+    expect(isoDay(new Date("2026-11-18T00:00:00.000Z"))).toBe("2026-11-18");
+    expect(isoDay(new Date("2026-11-18T23:59:59.000Z"))).toBe("2026-11-18");
+  });
+});
+
+describe("labels", () => {
+  it("formats a day without the en-AU comma", () => {
+    expect(formatDayLabel("2026-11-18")).toBe("Wed 18 Nov");
+  });
+
+  it("formats a month for a heading", () => {
+    expect(formatMonthLabel("2026-11")).toBe("November 2026");
   });
 });

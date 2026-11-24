@@ -105,3 +105,85 @@ export function addMonthsClamped(day: string, amount: number): string {
 
   return formatDay(Date.UTC(targetYear, targetMonth, targetDay));
 }
+
+/**
+ * The calendar day in a time zone, as ISO "YYYY-MM-DD".
+ *
+ * "Today" is not the same day everywhere. The household lives in
+ * Australia/Melbourne, so the month a page opens on is decided there, not by
+ * the server's UTC clock.
+ */
+export function todayInTimeZone(
+  timeZone = "Australia/Melbourne",
+  now: Date = new Date(),
+): string {
+  const parts = new Intl.DateTimeFormat("en-AU", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+
+  const get = (type: Intl.DateTimeFormatPartTypes): string => {
+    const part = parts.find((candidate) => candidate.type === type);
+    if (!part) {
+      throw new Error(`Could not read "${type}" for ${timeZone}`);
+    }
+    return part.value;
+  };
+
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+/** True for a well-formed "YYYY-MM" month. */
+export function isMonth(value: string): boolean {
+  return /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+}
+
+/** First and last calendar day of a month, inclusive. */
+export function monthBounds(month: string): { start: string; end: string } {
+  if (!isMonth(month)) {
+    throw new Error(`Expected a YYYY-MM month, received "${month}"`);
+  }
+
+  const start = `${month}-01`;
+  return { start, end: addDays(addMonthsClamped(start, 1), -1) };
+}
+
+/**
+ * A `@db.Date` column comes back from Prisma as a Date at UTC midnight. Read the
+ * UTC day; using local getters would shift the date for anyone east of UTC.
+ */
+export function isoDay(date: Date): string {
+  return formatDay(date.getTime());
+}
+
+/** Human day for a table: "Wed 18 Nov". */
+export function formatDayLabel(day: string): string {
+  const { year, month, day: date } = parseDay(day);
+  const parts = new Intl.DateTimeFormat("en-AU", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  }).formatToParts(new Date(Date.UTC(year, month - 1, date)));
+
+  const get = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((part) => part.type === type)?.value ?? "";
+
+  // en-AU would render "Wed, 18 Nov"; the house style has no comma.
+  return `${get("weekday")} ${get("day")} ${get("month")}`.trim();
+}
+
+/** Human month for a heading: "November 2026". */
+export function formatMonthLabel(month: string): string {
+  if (!isMonth(month)) {
+    throw new Error(`Expected a YYYY-MM month, received "${month}"`);
+  }
+
+  return new Intl.DateTimeFormat("en-AU", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${month}-01T00:00:00.000Z`));
+}
