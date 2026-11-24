@@ -38,7 +38,7 @@ Sixteen weeks, five milestones, one vertical slice per milestone:
 
 ```
 W1        W2–3        W4–5        W6–7      W8        W9        W10       W11       W12–13
-Foundations → Data+CRUD → Insight → Polish → Bills → Import → AI → Hardening → Portfolio
+Foundations → Data+CRUD → Insight → Polish → Bills → Import → Allocation → Hardening → Portfolio
 ```
 
 Every week has the same six parts:
@@ -111,10 +111,11 @@ likely thing to eat the hour. Take screenshots as you go so it is repeatable.
 **Focus:** a real data model, and data on screen.
 
 **Build**
-- Full Phase 1 schema: `Account`, `Category`, `Transaction`, `BudgetMonth`,
+- Full Phase 1 schema: `Account`, `Category`, `Transaction`, `BudgetPeriod`,
   `BudgetLine`, `Bill`, `ImportBatch`, `AiUsage`.
-- `pnpm db:seed` creating a fictional household with 3 months of transactions,
-  categories and one budget month.
+- `pnpm db:seed` is deferred until the demo household exists (XC-4): a second
+  household would break the single-household provisioning rule. Week 2 verifies
+  the list with a temporary dev fixture.
 - Transactions list: server-rendered, paginated, month filter, total.
 
 **Learn:** relational modelling and foreign keys · Prisma schema syntax ·
@@ -301,29 +302,29 @@ treat the first clean file as proof the parser works.
 
 ---
 
-## Week 10 — AI capture
+## Week 10 — Income allocation
 
-**Focus:** the capture loop that removes the last bit of friction.
+**Focus:** what to do with the money when it lands.
 
 **Build**
-- Text capture → draft transaction.
-- Receipt photo capture.
-- Voice note capture (transcribe, then parse).
-- Review queue: confirm, correct, discard.
-- `AiUsage` logging and a hard monthly cap.
+- FIN-12: a plan triggered by a confirmed income transaction.
+- Bills due in the next 14 days, the savings target per deposit, remainder to
+  spending.
+- Record the plan as balanced transfer pairs; exclude them from income/expense.
+- One ordered target rule per account.
 
-**Learn:** calling an LLM API · structured output with a JSON schema · prompt
-design for extraction · cost accounting · graceful degradation when a provider
-fails.
+**Learn:** event-driven work versus a period aggregate · idempotent transfer
+pairs · deterministic allocation instead of forecasting · why the month and the
+deposit are different clocks.
 
-**Your turn:** the review-queue screen. Accuracy of extraction is my problem;
-the interface is yours.
+**Done when:** a confirmed pay deposit produces a plan that covers the bills due
+before the next pay, and recording it leaves the month's income and expense
+totals unchanged.
 
-**Done when:** a photo of a receipt becomes a confirmed transaction in under 20
-seconds, and the usage table shows what it cost.
+**Watch out:** forecasting irregular income. Use the 14-day bill horizon and
+actual deposits; do not predict when the next invoice is paid.
 
-**Watch out:** don't chase 100% extraction accuracy. A pre-filled draft the
-human confirms is the correct product decision.
+> AI capture (FIN-9) moved to Phase 4 on 24 Nov 2026 (D24).
 
 ---
 

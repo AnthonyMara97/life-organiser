@@ -62,12 +62,12 @@ erDiagram
   HOUSEHOLD ||--o{ USER : "has members"
   HOUSEHOLD ||--o{ ACCOUNT : owns
   HOUSEHOLD ||--o{ CATEGORY : defines
-  HOUSEHOLD ||--o{ BUDGET_MONTH : plans
+  HOUSEHOLD ||--o{ BUDGET_PERIOD : plans
   HOUSEHOLD ||--o{ BILL : schedules
   HOUSEHOLD ||--o{ TRANSACTION : contains
   ACCOUNT ||--o{ TRANSACTION : records
   CATEGORY ||--o{ TRANSACTION : classifies
-  BUDGET_MONTH ||--o{ BUDGET_LINE : contains
+  BUDGET_PERIOD ||--o{ BUDGET_LINE : contains
   CATEGORY ||--o{ BUDGET_LINE : allocates
   CATEGORY ||--o{ BILL : classifies
   ACCOUNT ||--o{ BILL : "paid from"
@@ -80,8 +80,10 @@ erDiagram
 
 ### Tables
 
-**Household** — `id`, `name`, `createdAt`. Exactly one row in v1; the model exists
-so nothing is hard-coded to "the household".
+**Household** — `id`, `name`, `createdAt`, `savingsTargetCents` (nullable),
+`savingsTargetOn` (nullable date). Exactly one row in v1; the model exists so
+nothing is hard-coded to "the household". The target is configuration, not a
+goals table (D26).
 
 **User** — `id`, `householdId`, `email` (unique), `name`, `image`, `role`
 (`member` | `demo`), `createdAt`. `role: demo` is read-only and seeded.
@@ -97,16 +99,18 @@ so nothing is hard-coded to "the household".
 (**signed**: negative = money out), `occurredOn` (date), `description`,
 `merchant`, `note`, `status` (`needs_review` | `confirmed`), `source` (`manual` |
 `import` | `ai` | `bill`), `transferGroupId` (nullable, links the two sides of a
-transfer), `importBatchId`, `createdById`, `createdAt`, `updatedAt`.
+transfer), `importBatchId`, `billId` (nullable, the bill a payment settles —
+D25), `fingerprint` (nullable, unique per household, for idempotent imports),
+`createdById`, `createdAt`, `updatedAt`.
 
 > Note: the model is `Transaction`; Prisma's interactive transactions are
 > `prisma.$transaction()`. Different things, similar names. Expect this once.
 
-**BudgetPeriod** *(proposed — the period model is under review, see the brief §10)*
-— `id`, `householdId`, `label`, `startsOn` (date), `endsOn` (date),
-`unique(householdId, startsOn)`, `notes`. Storing an explicit date range rather
-than a calendar month keeps the period length a configuration detail rather than a
-schema change.
+**BudgetPeriod** — `id`, `householdId`, `label`, `startsOn` (date), `endsOn`
+(date), `unique(householdId, startsOn)`, `notes`. v1 writes one per calendar
+month (D23); the explicit range keeps the period length a configuration detail
+rather than a schema change. Allocation is triggered by an income event, not by
+a second period.
 
 **BudgetLine** — `id`, `budgetPeriodId`, `categoryId`, `allocatedCents`.
 `unique(budgetPeriodId, categoryId)`.
@@ -416,6 +420,10 @@ when a row reverses an earlier one. Two rows record a reversal: D10 reverses D7.
 | D20 | 2026-11-23 | **A separate Neon branch, `dev`, holds local data; `production` is for the deployed app** | `prisma migrate dev` can reset a database when it detects drift, and local experiments plus the two-person test must not touch the household's real rows. A branch is copy-on-write, so the storage cost is negligible | One branch for both (cheapest, but a bad migration destroys real data); a second Neon project (the console, the limits and the billing counted twice) |
 | D21 | 2026-11-23 | **Dark mode follows the operating system**; there is no in-app toggle | XC-3 asks for dark mode, not for a control. Swapping tokens under `prefers-color-scheme` means no stored preference, no second client island and no flash of the wrong theme — and every component names a role (canvas, surface, ink, line, accent) instead of a colour | A visible toggle (an explicit override, paid for with a cookie read to avoid the flash); automatic plus override (most flexible, most work) |
 | D22 | 2026-11-23 | **Vercel environment variables are set for Production only**; a preview deployment has no database and would fail at build | There is no preview branch, and a preview pointed at `production` would write the household's real rows from throwaway builds. A preview that fails loudly is the safer failure | Let previews share `production` (cheapest, but throwaway builds touch real data); create a preview branch now (extra setup before Week 2) |
+| D23 | 2026-11-24 | **Monthly budget periods, with allocation triggered by each income event** | The month is the reporting frame (FIN-4/FIN-5/FIN-7); the deposit is the action frame. A fixed fortnight would misalign the wife's irregular income. The two-tier idea survives as an event, not a second period | Fortnightly periods (matches the pay cycle, but splits monthly bills unevenly and creates 26 periods); monthly plus fixed fortnightly sub-periods (extra rows, same misalignment) |
+| D24 | 2026-11-24 | **FIN-12 income allocation is P1 Phase 1; AI capture is cut from the 16-week plan** | The owner's stated use is allocating each deposit across accounts; AI capture is P2/Phase 4 (FIN-9, D8) and can wait | Keep AI (needs the week FIN-12 needs); park FIN-12 (the finance side would not do the job it is built for) |
+| D25 | 2026-11-24 | **`Transaction.billId` links a payment to the bill it settles** | "Which bills did we pay" must be a query, not an inference from amount and date, which breaks on similar amounts and part payments | A `BillPayment` table (more correct for part payments, but a table the v1 UI does not need); no link (cheap now, expensive once real data exists) |
+| D26 | 2026-11-24 | **One household savings target (amount + date), no goals module** | The brief says the goal is configuration; a target is enough for the allocation plan and the dashboard, and a goals module is backlog | A `Goal` table and progress UI (scope without a v1 use); no target (the allocation plan has nothing to allocate to) |
 
 ## 13. Open technical questions
 
@@ -425,3 +433,8 @@ when a row reverses an earlier one. Two rows record a reversal: D10 reverses D7.
    the PWA decision affects it.
 3. Realtime between two devices (grocery list, Phase 3): polling, Supabase
    Realtime, or server-sent events? Decide when that phase starts.
+4. Inter-account transfers appear in two bank CSVs — an outflow in one and an
+   inflow in the other. The import must pair them (same magnitude, opposite
+   sign, dates within a day or two, different accounts) or the monthly totals
+   count the same money twice. Decide auto-pair versus confirm-in-review when
+   FIN-8 is built.

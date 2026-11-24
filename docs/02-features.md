@@ -21,7 +21,7 @@ Not user-facing features, but nothing else works without them.
 
 | ID | Feature | Priority | Status |
 |---|---|---|---|
-| XC-1 | **Auth with a two-email allowlist.** Google sign-in via Auth.js. Any other email is rejected in the `signIn` callback. | P0 | IN PROGRESS — sign-in, allowlist and `User` provisioning built 21 Nov and proven in production on a phone 23 Nov; the second account and the two-person test pending |
+| XC-1 | **Auth with a two-email allowlist.** Google sign-in via Auth.js. Any other email is rejected in the `signIn` callback. | P0 | DONE 24 Nov — sign-in, allowlist and `User` provisioning built 21 Nov, proven in production on a phone 23 Nov; the two-person test passed 24 Nov (rejected before the allowlist, admitted after) |
 | XC-2 | **Household scoping.** Every user belongs to a household; every query is filtered by it. Established once, enforced everywhere. | P0 | TODO |
 | XC-3 | **App shell.** Sidebar on desktop, bottom tab bar on phone, dark mode, sensible typography, empty states. | P0 | DONE 23 Nov — sidebar and 390px tabs, OS-following dark mode (D21), placeholder dashboard at `/dashboard`; real empty states arrive with the first data |
 | XC-4 | **Seed data + demo mode.** A fictional household with 3 months of plausible transactions, loaded by `pnpm db:seed`. Read-only demo login for the public deployment. | P1 | TODO |
@@ -102,6 +102,8 @@ One screen that answers "where are we this month?".
 - Name, amount, frequency (weekly / fortnightly / monthly / quarterly / yearly),
   next due date, category, account.
 - Mark as paid, which creates the matching transaction.
+- Paid history is a query over transactions carrying `billId` (D25), so a
+  monthly or quarterly bill's payment is never inferred from amount and date.
 - Upcoming (next 30 days) and overdue lists on the dashboard.
 - In-app reminder surface; email/push is P2.
 
@@ -139,7 +141,10 @@ same row twice.
 - [ ] A file over the size limit is rejected with a clear message.
 - [ ] No uploaded file content is written to disk, logs or the database.
 
-### FIN-9 AI capture — P2 (Phase 4)
+### FIN-9 AI capture — PARKED (Phase 4)
+
+> Cut from the 16-week plan on 24 Nov 2026 (D24) to make room for FIN-12. The
+> specification below stands; it returns in Phase 4.
 
 - Photo of a receipt, voice note, or short sentence → draft transaction
   (amount, merchant, date, suggested category).
@@ -150,6 +155,33 @@ same row twice.
 
 - CSV download of all transactions for a date range, for data ownership and
   backups.
+
+### FIN-12 Income allocation plan — P1
+
+When an income transaction is confirmed, show a suggested split of the deposit
+across the household's accounts: bills due in the next 14 days, the savings
+target for that deposit, and the remainder to spending. The app recommends; the
+user moves the money, optionally recording the transfer pair.
+
+- Triggered by an income transaction (manual, imported or bill), not by a
+  calendar boundary.
+- Horizon-based: bills due in the next 14 days, never a forecast of irregular
+  income.
+- One ordered target per account, fixed or percentage; the remainder goes to the
+  spending account.
+- No bank feeds, no automatic movement, no category rollover.
+
+*Why it matters:* a fortnightly salary and irregular invoices need one
+mechanism. The month is where the budget is reviewed; the deposit is where the
+decision is made (D23/D24). This is account allocation, not the parked envelope
+carry-over.
+
+**Acceptance criteria**
+
+- [ ] A confirmed income row offers a plan; an expense row does not.
+- [ ] The plan never recommends spending money the household does not have.
+- [ ] Recording the plan creates balanced transfer pairs, excluded from
+      income/expense totals.
 
 ---
 
@@ -226,7 +258,9 @@ Kept here so they stop being re-suggested:
 - Bank feeds / open banking / Plaid-style aggregation.
 - Automatic receipt line-item breakdown (only totals, for now).
 - Push notifications to phones (in-app only).
-- Recurring budget rollover and envelope carry-over.
+- Recurring budget rollover and envelope carry-over. (FIN-12 is a different
+  thing: splitting a deposit across accounts, not carrying category budgets
+  forward.)
 - Multi-currency.
 - Net worth and investment tracking.
 - Document storage; uploads are parsed and discarded, never kept.
@@ -240,7 +274,8 @@ Kept here so they stop being re-suggested:
 - WhatsApp / SMS bot to capture entries.
 - Shopping list that reorders itself by supermarket aisle layout per store.
 - "Subscription audit" — detect and flag forgotten subscriptions.
-- Savings goals with progress against budget surplus.
+- Savings goals with progress against budget surplus. Superseded for v1 by the
+  single household savings target (D26); revisit after FIN-12 ships.
 - Bill splitting between the two people ("you owe me $40").
 - Meal plan generated from what is already in the pantry.
 - Annual summary ("here's the year in money").
