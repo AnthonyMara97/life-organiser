@@ -1,8 +1,9 @@
 // Life Organiser — database schema.
 //
-// Deliberately small: only the two models Week 1 needs. Everything else arrives
-// with its own milestone, so the migration history stays readable and each
-// change can be explained.
+// The schema is the source of truth: nobody edits the live database. Prisma
+// turns a change here into versioned SQL under prisma/migrations, and that SQL
+// is what ships. Week 2 adds the Phase 1 finance models; later phases add
+// calendar, chores, meals and exercise.
 
 generator client {
   provider = "prisma-client-js"
@@ -22,6 +23,42 @@ enum Role {
   demo
 }
 
+enum AccountType {
+  transaction
+  savings
+  cash
+  credit
+}
+
+enum CategoryKind {
+  income
+  expense
+}
+
+enum TransactionStatus {
+  needs_review
+  confirmed
+}
+
+enum TransactionSource {
+  manual
+  import
+  ai
+  bill
+}
+
+enum BillFrequency {
+  weekly
+  fortnightly
+  monthly
+  quarterly
+  yearly
+}
+
+enum ImportSource {
+  csv
+}
+
 /// Exactly one row in v1. The table exists so that nothing in the code is
 /// hard-coded to "the household" — the day a second one appears, the schema
 /// already supports it.
@@ -30,7 +67,20 @@ model Household {
   name      String
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
-  users User[]
+  // The savings buffer is the point of the finance side, so the target is
+  // configuration on the household rather than a goals table (D26). Both are
+  // nullable: a household can exist before a target is set.
+  savingsTargetCents Int?
+  savingsTargetOn    DateTime? @db.Date
+
+  users         User[]
+  accounts      Account[]
+  categories    Category[]
+  transactions  Transaction[]
+  budgetPeriods BudgetPeriod[]
+  bills         Bill[]
+  importBatches ImportBatch[]
+  aiUsage       AiUsage[]
 }
 
 model User {
@@ -43,7 +93,208 @@ model User {
   role        Role      @default(member)
   createdAt   DateTime  @default(now()) @db.Timestamptz(3)
 
+  transactions  Transaction[] @relation("TransactionCreatedBy")
+  importBatches ImportBatch[] @relation("ImportBatchCreatedBy")
+  aiUsage       AiUsage[]
+
   // Every read in this app will filter by household, so the column is indexed
   // from the first migration rather than after the first slow query.
   @@index([householdId])
+}
+
+/// A real place money sits: a transaction account, savings, cash or a credit
+/// card. Balance is derived (opening balance plus its transactions), never
+/// stored — a stored balance is eventually wrong (D4/derived-data rule).
+model Account {
+  id                  String       @id @default(cuid(2))
+  householdId         String
+  household           Household    @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name                String
+  type                AccountType
+  openingBalanceCents Int          @default(0)
+  currency            String       @default("AUD")
+  colour              String?
+  archivedAt          DateTime?    @db.Timestamptz(3)
+  sortOrder           Int          @default(0)
+  createdAt           DateTime     @default(now()) @db.Timestamptz(3)
+
+  transactions Transaction[]
+  bills        Bill[]
+
+  @@index([householdId])
+}
+
+/// One level of subcategories only. Archived rather than deleted once a
+/// transaction or bill references it, so history stays readable.
+model Category {
+  id          String       @id @default(cuid(2))
+  householdId String
+  household   Household    @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name        String
+  kind        CategoryKind
+  parentId    String?
+  parent      Category?    @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children    Category[]   @relation("CategoryTree")
+  icon        String?
+  colour      String?
+  archivedAt  DateTime?    @db.Timestamptz(3)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+
+  transactions Transaction[]
+  budgetLines  BudgetLine[]
+  bills        Bill[]
+
+  @@index([householdId])
+  @@index([parentId])
+}
+
+/// The core record. Everything else in the finance side is derived from it.
+model Transaction {
+  id          String    @id @default(cuid(2))
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  accountId   String
+  account     Account   @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  // Signed integer cents (D4). Negative is money out. A transfer is two rows
+  // joined by transferGroupId and excluded from income/expense totals.
+  amountCents Int
+  occurredOn  DateTime @db.Date
+  description String
+  merchant    String?
+  note        String?
+  status      TransactionStatus @default(needs_review)
+  source      TransactionSource @default(manual)
+
+  // Links the two sides of a transfer between the household's own accounts.
+  transferGroupId String?
+
+  importBatchId String?
+  importBatch   ImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+
+  // Set when a bill is marked paid (D25). Without it, "which bills did we pay"
+  // would have to be guessed from amount and date, which breaks on similar
+  // amounts and part payments.
+  billId String?
+  bill   Bill?   @relation(fields: [billId], references: [id], onDelete: SetNull)
+
+  // A repeated CSV import must be a no-op, not a duplicate. Nullable because
+  // manual rows have no source row; Postgres allows many NULLs in a unique
+  // index, so only imported rows participate.
+  fingerprint String?
+
+  createdById String
+  createdBy   User     @relation("TransactionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  @@unique([householdId, fingerprint])
+  @@index([householdId, occurredOn])
+  @@index([householdId, status])
+  @@index([accountId])
+  @@index([categoryId])
+  @@index([billId])
+  @@index([transferGroupId])
+}
+
+/// The reporting and allocation window. Storing an explicit date range rather
+/// than a calendar month keeps the length a configuration detail (D23); v1
+/// creates one per calendar month, but the schema does not assume it.
+model BudgetPeriod {
+  id          String    @id @default(cuid(2))
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  label       String
+  startsOn    DateTime  @db.Date
+  endsOn      DateTime  @db.Date
+  notes       String?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+
+  lines BudgetLine[]
+
+  @@unique([householdId, startsOn])
+  @@index([householdId])
+}
+
+/// What a category is allocated for one period. Actuals are computed from
+/// transactions, never stored (the derived-data rule), so this table holds the
+/// plan only.
+model BudgetLine {
+  id             String       @id @default(cuid(2))
+  budgetPeriodId String
+  budgetPeriod   BudgetPeriod @relation(fields: [budgetPeriodId], references: [id], onDelete: Cascade)
+  categoryId     String
+  category       Category     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  allocatedCents Int
+
+  @@unique([budgetPeriodId, categoryId])
+  @@index([categoryId])
+}
+
+/// A recurring obligation. `nextDueOn` is the occurrence currently outstanding;
+/// marking it paid creates a transaction carrying `billId` and moves the date on.
+/// Paid history is a query over those transactions, not a second schedule table.
+model Bill {
+  id                    String        @id @default(cuid(2))
+  householdId           String
+  household             Household     @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name                  String
+  amountCents           Int
+  frequency             BillFrequency
+  nextDueOn             DateTime      @db.Date
+  categoryId            String
+  category              Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  accountId             String
+  account               Account       @relation(fields: [accountId], references: [id], onDelete: Restrict)
+  autoCreateTransaction Boolean       @default(false)
+  archivedAt            DateTime?     @db.Timestamptz(3)
+  createdAt             DateTime      @default(now()) @db.Timestamptz(3)
+
+  transactions Transaction[]
+
+  @@index([householdId, nextDueOn])
+  @@index([categoryId])
+  @@index([accountId])
+}
+
+/// The summary of one CSV upload. The file itself is parsed in memory and
+/// discarded; only this record and the resulting transactions survive.
+model ImportBatch {
+  id            String       @id @default(cuid(2))
+  householdId   String
+  household     Household    @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  createdById   String
+  createdBy     User         @relation("ImportBatchCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  source        ImportSource @default(csv)
+  fileName      String
+  rowCount      Int
+  importedCount Int
+  skippedCount  Int
+  createdAt     DateTime     @default(now()) @db.Timestamptz(3)
+
+  transactions Transaction[]
+
+  @@index([householdId])
+  @@index([createdById])
+}
+
+/// One row per AI call, so the monthly cap is enforceable and auditable.
+model AiUsage {
+  id                 String    @id @default(cuid(2))
+  householdId        String
+  household          Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  model              String
+  inputTokens        Int
+  outputTokens       Int
+  estimatedCostCents Int
+  feature            String
+  createdAt          DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([householdId, createdAt])
+  @@index([userId])
 }
