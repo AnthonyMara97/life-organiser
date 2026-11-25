@@ -402,7 +402,7 @@ when a row reverses an earlier one. Two rows record a reversal: D10 reverses D7.
 | D2 | 2026-11-15 | TypeScript strict | Type safety is the point of choosing TS | Plain JavaScript |
 | D3 | 2026-11-15 | PostgreSQL + Prisma | Relational data, readable migrations | SQLite; MongoDB; Drizzle |
 | D4 | 2026-11-15 | Money as signed integer cents | Removes float rounding bugs | `Float`; `Decimal` in app code |
-| D5 | 2026-11-15 | Google sign-in, two-email allowlist | No password handling; closed by default | Email magic links; passwords |
+| D5 | 2026-11-15 | Google sign-in, two-email allowlist — **extended by D29** | No password handling; closed by default | Email magic links; passwords |
 | D6 | 2026-11-15 | Finances built first | User priority; hardest data modelling, best learning | Meals + groceries vertical slice |
 | D7 | 2026-11-15 | **Superseded by D10.** Drive via Picker + `drive.file` scope | Least privilege, simplest consent | `drive.readonly` |
 | D8 | 2026-11-15 | AI capture deferred to Phase 4 | Data model must settle first; not on the critical path | Build AI first |
@@ -426,6 +426,7 @@ when a row reverses an earlier one. Two rows record a reversal: D10 reverses D7.
 | D26 | 2026-11-24 | **One household savings target (amount + date), no goals module** | The brief says the goal is configuration; a target is enough for the allocation plan and the dashboard, and a goals module is backlog | A `Goal` table and progress UI (scope without a v1 use); no target (the allocation plan has nothing to allocate to) |
 | D27 | 2026-11-25 | **Deleting a transaction is a soft delete** (`deletedAt`); the 10-second undo clears the column | The undo has to survive a reload or a closed tab, which a browser-side delayed delete cannot, and it gives CSV import a reversible operation for free. The cost is one filter every read must apply, so it exists once, in `liveTransactionWhere` | Client-side delayed delete (no schema change, but the delete is lost on navigation); hard delete plus a separate audit table (more machinery than a two-person household needs) |
 | D28 | 2026-11-25 | **shadcn/ui's dialog and Sonner toast are introduced**, copied into `src/components/ui` and mapped onto the project's role tokens | This is the first UI that genuinely needs a focus-trapped dialog and a toast, which D19 anticipated. Hand-rolling the portal, focus trap and escape handling is where accessibility bugs come from. The CLI `init` was deliberately not used: it rewrites `globals.css` and assumes `--accent` means a hover surface, which is this project's strong action colour | Hand-rolled Tailwind dialog and toast; Radix primitives without the shadcn wrapper; deferring again and using a browser `confirm` |
+| D29 | 2026-11-25 | **The allowlist admits a third address: Anthony's software-development mentor, who reviews the work.** Extends D5 | Anthony wants the work reviewed by someone outside the household, and the allowlist is the only door in. The account is a normal `member` with the same access as the household, which Anthony confirmed is intended; read-only review access is not built | A read-only review role (more correct eventually, but there is no role enforcement to hang it on yet); sharing Anthony's account (no separation, and his session would change hands); no third access |
 
 ## 13. Open technical questions
 

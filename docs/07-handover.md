@@ -9,7 +9,7 @@ at 390px in the browser. **Nothing is pushed yet.**
 Run `git status -sb` before anything else.
 
 > **Position lives in `docs/00-status.md`.** Read that first: one page, the
-> milestone and build item, the settled decisions (`D1`–`D28`) and what is still
+> milestone and build item, the settled decisions (`D1`–`D29`) and what is still
 > open. This file is the detail behind it. A decision that appears in
 > `00-status.md` as settled is settled — cite it, do not re-open it.
 
@@ -62,7 +62,7 @@ Run `git status -sb` before anything else.
 | Google redirect URIs | `https://life-organiser-eight.vercel.app/api/auth/callback/google`, `http://localhost:3000/…`, `http://127.0.0.1:3000/…` |
 | Build command | `package.json`'s `build` → `prisma generate && next build`; no Vercel override |
 | **Production migration** | `20261124002343_phase1_finances` only. **`20261125061937_soft_delete_transactions` is pending** |
-| Production rows | 1 household, 2 users, **0** accounts/transactions/budget periods/bills/categories |
+| Production rows | 1 household, 3 users, **0** accounts/transactions/budget periods/bills/categories |
 
 Verified from outside with no session: `/`, `/dashboard` and `/transactions`
 return 307 to `/login`; `/login` renders; `/api/auth/providers` reports exactly
@@ -95,7 +95,7 @@ effect.
 - **Decisions belong to Anthony.** Present the decision, two or three options, a
   recommendation with what it entails and what could go wrong, the cost to
   reverse. Then stop. `AGENTS.md` has the full shape.
-- **Check whether it is already decided.** `00-status.md` lists D1–D28; if a row
+- **Check whether it is already decided.** `00-status.md` lists D1–D29; if a row
   answers it, cite the ID and move on.
 - **Review before commit.** Show what changed and why, in plain English, then
   commit. One logical change per commit.
@@ -116,9 +116,9 @@ effect.
 | Database | ✅ Neon project, Sydney. `production` and `dev`; production is one migration behind |
 | Google OAuth client | ✅ Created 19 Nov, Publishing status Testing |
 | **Auth.js** | ✅ `next-auth@5.0.0-beta.32`, pinned exactly |
-| Allowlist | ✅ Enforced server-side in `signIn`; 8 tests; both household accounts proven 24 Nov |
+| Allowlist | ✅ Enforced server-side in `signIn`; 8 tests; both household accounts proven 24 Nov; a third address (the mentor) added 25 Nov (D29) |
 | `Household` row | ✅ One per branch |
-| `User` provisioning | ✅ Production has 2 users |
+| `User` provisioning | ✅ Production has 3 users (the third is the mentor, D29) |
 | App UI | ✅ Shell closed against XC-3 |
 | Finance schema | ✅ `20261124002343_phase1_finances` on both branches; soft delete on `dev` only |
 | Transactions list | ✅ `/transactions`, month filter, pagination, total, states |
@@ -204,7 +204,7 @@ Everything lives inside Ubuntu, not Windows.
 | Migrations on `production` | the first two only — **soft delete is pending** |
 | Production migration URL | the **direct** production string, never the pooled Vercel one |
 | Household row | ✅ one per branch |
-| User rows | ✅ 2 in production |
+| User rows | ✅ 3 in production: Anthony, his wife, and his mentor for review (D29) |
 | Finance rows | ✅ 0 in production; 26 fictional rows + 7 categories in `dev` |
 
 Pooling is deliberately **off** in the local URL: `prisma migrate` cannot run
@@ -332,6 +332,12 @@ exhausting Postgres. Migration commands need the **direct** production string.
 - The database showed the row with `deletedAt` set between delete and undo.
 - Two layout bugs found and fixed (mobile actions off-screen; toast over the tab
   bar), then re-checked.
+
+**Access**
+
+- A third allowlisted address was added: Anthony's software-development mentor,
+  who reviews the work (D29). The account is a normal `member`; production now
+  has 3 `User` rows. Anthony confirmed full member access is intended.
 
 **Not done, deliberately**
 

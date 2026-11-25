@@ -6,7 +6,10 @@ before making changes. It overrides general defaults.
 ## What this project is
 
 **Life Organiser** — a private household management web app for exactly two
-users (Anthony and his wife). It is a real tool the household uses daily.
+users (Anthony and his wife). It is a real tool the household uses daily. A
+third allowlisted address — Anthony's software-development mentor — has access
+to review the work (D29); the product itself is still designed for the household
+of two.
 
 It is **also** the place Anthony learns how software is architected: how the
 pieces fit, where the boundaries are drawn, and why each layer exists. That is

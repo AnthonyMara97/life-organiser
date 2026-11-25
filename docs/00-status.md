@@ -21,7 +21,7 @@ push and verify → Week 4.**
 
 | | |
 |---|---|
-| **Done** | Database on Neon (19 Nov) · Auth.js + allowlist (20 Nov) · `User` provisioning (21 Nov) · separate `dev` data branch (23 Nov) · app shell closed against XC-3 (23 Nov) · **deployed and signed in from a phone (23 Nov)** · **two-person allowlist test (24 Nov)** · **Phase 1 finance schema + production migration (24 Nov)** · **transactions list (24 Nov)** · **quick-add expense form (24 Nov)** · **edit/delete with a 10-second undo, soft delete (25 Nov)** · **categories with archive (25 Nov)** · **filters — account, category, status, text (25 Nov)** |
+| **Done** | Database on Neon (19 Nov) · Auth.js + allowlist (20 Nov) · `User` provisioning (21 Nov) · separate `dev` data branch (23 Nov) · app shell closed against XC-3 (23 Nov) · **deployed and signed in from a phone (23 Nov)** · **two-person allowlist test (24 Nov)** · **Phase 1 finance schema + production migration (24 Nov)** · **transactions list (24 Nov)** · **quick-add expense form (24 Nov)** · **edit/delete with a 10-second undo, soft delete (25 Nov)** · **categories with archive (25 Nov)** · **filters — account, category, status, text (25 Nov)** · **mentor review access (25 Nov)** |
 | **In progress** | Week 3 close-out only: production migration, push and deploy verification |
 | **Not started** | Week 4 (accounts and the dashboard; transfers) · bills (W8), CSV import (W9), income allocation (W10), hardening (W11) |
 | **Unverified** | The quick-add form on the deployed app (production has no accounts or categories yet) · the whole Week 3 change on the deployed app, because it has not been pushed · transfer pairing in CSV import · the two-tier ledger for imported rows |
@@ -75,6 +75,7 @@ Full reasoning in `03-architecture.md` §12; environments in §11. Cite the ID.
 | D26 | One household savings target (amount + date); no goals module |
 | D27 | Deleting a transaction is a **soft delete** (`deletedAt`); undo clears it |
 | D28 | shadcn/ui's dialog and Sonner toast are in, adapted to the role tokens |
+| D29 | A third allowlisted address — Anthony's mentor — has review access (extends D5) |
 
 **When a document and the live system disagree, the live system wins — say so and
 ask.** Neon, Google Cloud and Vercel hold state this repository cannot see. A
@@ -83,8 +84,9 @@ patch of this repo is not evidence about any of them.
 ## Housekeeping
 
 - **`ALLOWED_EMAILS` is type Config** (recreated 24 Nov; one Production row,
-  readable with Reveal Value). The value holds both addresses. The Secret type
-  was the cause of the 24 Nov lockout — keep this one Config.
+  readable with Reveal Value). The value holds three addresses — Anthony, his
+  wife, and his software-development mentor, who reviews the work (D29). The
+  Secret type was the cause of the 24 Nov lockout — keep this one Config.
 - **The `dev` branch carries a temporary fixture:** 3 accounts, 3 budget periods
   and 26 fictional transactions (25 fixture rows plus the quick-add test), and
   7 categories — 6 active plus **one archived "Test sub"** created and archived

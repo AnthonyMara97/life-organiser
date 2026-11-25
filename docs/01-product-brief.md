@@ -186,7 +186,7 @@ Explicitly out of scope. Listing these prevents drift.
 | Pay cycle | Anthony **fortnightly**; wife is a sole trader with **irregular income** | 15 Nov 2026 |
 | Sync ritual | **Monday**, weekly — the day after the weekend's spending | 15 Nov 2026 |
 | Time model | **Three clocks:** weekly sync ritual · fortnightly budget period · per-person income schedule | 15 Nov 2026 |
-| Product scope | Built for **two users only**. Generalisation, sign-up and multi-tenancy deferred | 15 Nov 2026 |
+| Product scope | Built for **two household users only**. Generalisation, sign-up and multi-tenancy deferred. A third allowlisted address (Anthony's mentor) has review access — not a product user (D29) | 25 Nov 2026 |
 | Deadline | None. 13-week plan stands; 15 weeks acceptable; **16 weeks hard cap** | 15 Nov 2026 |
 | After February | Decide in January | 15 Nov 2026 |
 | Name | Life Organiser | 15 Nov 2026 |

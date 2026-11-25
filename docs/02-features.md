@@ -21,7 +21,7 @@ Not user-facing features, but nothing else works without them.
 
 | ID | Feature | Priority | Status |
 |---|---|---|---|
-| XC-1 | **Auth with a two-email allowlist.** Google sign-in via Auth.js. Any other email is rejected in the `signIn` callback. | P0 | DONE 24 Nov — sign-in, allowlist and `User` provisioning built 21 Nov, proven in production on a phone 23 Nov; the two-person test passed 24 Nov (rejected before the allowlist, admitted after) |
+| XC-1 | **Auth with an email allowlist.** Google sign-in via Auth.js. Any other email is rejected in the `signIn` callback. | P0 | DONE 24 Nov — sign-in, allowlist and `User` provisioning built 21 Nov, proven in production on a phone 23 Nov; the two-person test passed 24 Nov (rejected before the allowlist, admitted after). A third address — Anthony's software-development mentor — was added 25 Nov for review (D29), so the allowlist now holds three and production has 3 users |
 | XC-2 | **Household scoping.** Every user belongs to a household; every query is filtered by it. Established once, enforced everywhere. | P0 | TODO |
 | XC-3 | **App shell.** Sidebar on desktop, bottom tab bar on phone, dark mode, sensible typography, empty states. | P0 | DONE 23 Nov — sidebar and 390px tabs, OS-following dark mode (D21), placeholder dashboard at `/dashboard`; real empty states arrive with the first data |
 | XC-4 | **Seed data + demo mode.** A fictional household with 3 months of plausible transactions, loaded by `pnpm db:seed`. Read-only demo login for the public deployment. | P1 | TODO |
