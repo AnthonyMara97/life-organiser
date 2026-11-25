@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 import { isoDay, monthBounds } from "@/lib/dates";
 import { db } from "@/lib/db";
 
@@ -8,6 +10,30 @@ import { db } from "@/lib/db";
  * — never from the URL or a form field. Every query below filters on it, so a
  * malformed request can only show the caller's own household.
  */
+
+/**
+ * The one filter every transaction read starts from (D27).
+ *
+ * Deleting a row sets `deletedAt`; the row stays in the table so the undo is an
+ * update and survives a reload. That only holds if no read forgets the filter,
+ * so there is exactly one place it is written and every query spreads this.
+ * A new query that does not start here is a bug: it will count deleted rows.
+ */
+export function liveTransactionWhere(
+  householdId: string,
+): Prisma.TransactionWhereInput {
+  return { householdId, deletedAt: null };
+}
+
+export type TransactionStatusFilter = "needs_review" | "confirmed";
+
+export type TransactionFilters = {
+  accountId?: string;
+  categoryId?: string;
+  status?: TransactionStatusFilter;
+  query?: string;
+};
+
 export type TransactionListRow = {
   id: string;
   occurredOn: string;
@@ -15,7 +41,9 @@ export type TransactionListRow = {
   merchant: string | null;
   amountCents: number;
   status: "needs_review" | "confirmed";
+  accountId: string;
   accountName: string;
+  categoryId: string;
   categoryName: string;
 };
 
@@ -33,6 +61,7 @@ export async function listTransactionsForMonth(
   householdId: string,
   month: string,
   requestedPage: number,
+  filters: TransactionFilters = {},
   pageSize = DEFAULT_PAGE_SIZE,
 ): Promise<TransactionListResult> {
   const { start, end } = monthBounds(month);
@@ -43,7 +72,27 @@ export async function listTransactionsForMonth(
     gte: new Date(`${start}T00:00:00.000Z`),
     lte: new Date(`${end}T00:00:00.000Z`),
   };
-  const where = { householdId, occurredOn };
+
+  const search = filters.query?.trim();
+  const where: Prisma.TransactionWhereInput = {
+    ...liveTransactionWhere(householdId),
+    occurredOn,
+    ...(filters.accountId ? { accountId: filters.accountId } : {}),
+    ...(filters.categoryId ? { categoryId: filters.categoryId } : {}),
+    ...(filters.status ? { status: filters.status } : {}),
+    // Free text searches the three readable text columns. `insensitive` is what
+    // makes "woolworths" find "Woolworths Metro"; Postgres does the work, not
+    // JavaScript, so pagination and the total stay correct.
+    ...(search
+      ? {
+          OR: [
+            { description: { contains: search, mode: "insensitive" as const } },
+            { merchant: { contains: search, mode: "insensitive" as const } },
+            { note: { contains: search, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
 
   const [totalCount, aggregate] = await Promise.all([
     db.transaction.count({ where }),
@@ -67,6 +116,8 @@ export async function listTransactionsForMonth(
       merchant: true,
       amountCents: true,
       status: true,
+      accountId: true,
+      categoryId: true,
       account: { select: { name: true } },
       category: { select: { name: true } },
     },
@@ -80,7 +131,9 @@ export async function listTransactionsForMonth(
       merchant: row.merchant,
       amountCents: row.amountCents,
       status: row.status,
+      accountId: row.accountId,
       accountName: row.account.name,
+      categoryId: row.categoryId,
       categoryName: row.category.name,
     })),
     totalCount,
@@ -90,28 +143,50 @@ export async function listTransactionsForMonth(
   };
 }
 
-export type QuickAddOption = { id: string; name: string };
+export type AccountOption = { id: string; name: string; archived: boolean };
+export type CategoryOption = {
+  id: string;
+  name: string;
+  kind: "income" | "expense";
+  archived: boolean;
+};
 
 /**
- * The choices the quick-add form needs. Only active accounts and expense
- * categories: the form records money out, and income arrives through imports
- * and FIN-12.
+ * Every choice the filters, the edit dialog and the quick-add form need.
+ *
+ * Archived rows are included, with a flag rather than filtered out: a
+ * transaction from two months ago may point at an account or category that was
+ * archived since, and it must still be readable, editable and findable. The
+ * quick-add form is the one caller that filters them out, because a new row
+ * should not be filed against a closed account.
  */
-export async function getQuickAddOptions(
+export async function getTransactionOptions(
   householdId: string,
-): Promise<{ accounts: QuickAddOption[]; categories: QuickAddOption[] }> {
+): Promise<{ accounts: AccountOption[]; categories: CategoryOption[] }> {
   const [accounts, categories] = await Promise.all([
     db.account.findMany({
-      where: { householdId, archivedAt: null },
+      where: { householdId },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-      select: { id: true, name: true },
+      select: { id: true, name: true, archivedAt: true },
     }),
     db.category.findMany({
-      where: { householdId, kind: "expense", archivedAt: null },
+      where: { householdId },
       orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-      select: { id: true, name: true },
+      select: { id: true, name: true, kind: true, archivedAt: true },
     }),
   ]);
 
-  return { accounts, categories };
+  return {
+    accounts: accounts.map((account) => ({
+      id: account.id,
+      name: account.name,
+      archived: account.archivedAt !== null,
+    })),
+    categories: categories.map((category) => ({
+      id: category.id,
+      name: category.name,
+      kind: category.kind,
+      archived: category.archivedAt !== null,
+    })),
+  };
 }

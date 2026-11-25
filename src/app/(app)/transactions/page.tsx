@@ -4,24 +4,32 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { QuickAddForm } from "@/components/transactions/quick-add-form";
+import { TransactionTable } from "@/components/transactions/transaction-table";
 import {
   addMonthsClamped,
-  formatDayLabel,
   formatMonthLabel,
   isMonth,
   todayInTimeZone,
 } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
 import {
-  getQuickAddOptions,
+  getTransactionOptions,
   listTransactionsForMonth,
+  type TransactionFilters,
 } from "@/server/transactions";
 
 export const metadata: Metadata = { title: "Transactions — Life Organiser" };
 
 const PAGE_SIZE = 20;
 
-type SearchParams = { month?: string; page?: string };
+type SearchParams = {
+  month?: string;
+  page?: string;
+  account?: string;
+  category?: string;
+  status?: string;
+  q?: string;
+};
 
 function currentMonth(): string {
   return todayInTimeZone().slice(0, 7);
@@ -32,14 +40,31 @@ function parsePage(value: string | undefined): number {
   return Number.isInteger(page) && page > 0 ? page : 1;
 }
 
-function pageHref(month: string, page: number): string {
-  return `/transactions?month=${month}&page=${page}`;
+function parseStatus(value: string | undefined): TransactionFilters["status"] {
+  return value === "needs_review" || value === "confirmed" ? value : undefined;
+}
+
+/** Keeps the current filters on every month and page link. */
+function listHref(
+  month: string,
+  page: number,
+  filters: TransactionFilters,
+): string {
+  const params = new URLSearchParams({ month });
+  if (page > 1) params.set("page", String(page));
+  if (filters.accountId) params.set("account", filters.accountId);
+  if (filters.categoryId) params.set("category", filters.categoryId);
+  if (filters.status) params.set("status", filters.status);
+  if (filters.query) params.set("q", filters.query);
+  return `/transactions?${params.toString()}`;
 }
 
 const paginationLink =
   "rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink-muted hover:bg-accent-soft hover:text-ink";
 const paginationDisabled =
   "rounded-md border border-line px-3 py-1.5 text-xs font-medium text-ink-subtle opacity-50";
+const fieldClass =
+  "mt-1 w-full rounded-md border border-line bg-canvas px-3 py-2 text-sm text-ink placeholder:text-ink-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
 export default async function TransactionsPage({
   searchParams,
@@ -56,15 +81,34 @@ export default async function TransactionsPage({
   const params = await searchParams;
   const month =
     params.month && isMonth(params.month) ? params.month : currentMonth();
+
+  const filters: TransactionFilters = {
+    accountId: params.account || undefined,
+    categoryId: params.category || undefined,
+    status: parseStatus(params.status),
+    query: params.q?.trim().slice(0, 100) || undefined,
+  };
+  const hasFilters = Boolean(
+    filters.accountId || filters.categoryId || filters.status || filters.query,
+  );
+
   const [result, options] = await Promise.all([
     listTransactionsForMonth(
       householdId,
       month,
       parsePage(params.page),
+      filters,
       PAGE_SIZE,
     ),
-    getQuickAddOptions(householdId),
+    getTransactionOptions(householdId),
   ]);
+
+  // The quick-add form is deliberately narrower than the filters: a new row
+  // should not be filed against an archived account, and it is expense-only.
+  const activeAccounts = options.accounts.filter((account) => !account.archived);
+  const activeExpenseCategories = options.categories.filter(
+    (category) => !category.archived && category.kind === "expense",
+  );
 
   const monthLabel = formatMonthLabel(month);
   const today = todayInTimeZone();
@@ -99,7 +143,7 @@ export default async function TransactionsPage({
 
         <div className="flex items-center gap-1 text-sm">
           <Link
-            href={pageHref(previousMonth, 1)}
+            href={listHref(previousMonth, 1, filters)}
             aria-label="Previous month"
             className={paginationLink}
           >
@@ -109,7 +153,7 @@ export default async function TransactionsPage({
             {monthLabel}
           </span>
           <Link
-            href={pageHref(nextMonth, 1)}
+            href={listHref(nextMonth, 1, filters)}
             aria-label="Next month"
             className={paginationLink}
           >
@@ -117,7 +161,7 @@ export default async function TransactionsPage({
           </Link>
           {month !== thisMonth ? (
             <Link
-              href="/transactions"
+              href={listHref(thisMonth, 1, filters)}
               className="ml-2 text-xs text-ink-muted underline-offset-4 hover:text-ink hover:underline"
             >
               This month
@@ -126,10 +170,10 @@ export default async function TransactionsPage({
         </div>
       </div>
 
-      {options.accounts.length > 0 && options.categories.length > 0 ? (
+      {activeAccounts.length > 0 && activeExpenseCategories.length > 0 ? (
         <QuickAddForm
-          accounts={options.accounts}
-          categories={options.categories}
+          accounts={activeAccounts}
+          categories={activeExpenseCategories}
           today={today}
         />
       ) : (
@@ -139,77 +183,122 @@ export default async function TransactionsPage({
         </p>
       )}
 
+      <section className="rounded-lg border border-line bg-surface p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-sm font-medium text-ink">Filter</h2>
+          <Link
+            href="/categories"
+            className="text-xs text-ink-muted underline-offset-4 hover:text-ink hover:underline"
+          >
+            Manage categories →
+          </Link>
+        </div>
+
+        <form
+          method="get"
+          action="/transactions"
+          className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+        >
+          <input type="hidden" name="month" value={month} />
+
+          <label className="block text-xs font-medium text-ink-muted">
+            Account
+            <select
+              name="account"
+              defaultValue={filters.accountId ?? ""}
+              className={fieldClass}
+            >
+              <option value="">All accounts</option>
+              {options.accounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name}
+                  {account.archived ? " (archived)" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block text-xs font-medium text-ink-muted">
+            Category
+            <select
+              name="category"
+              defaultValue={filters.categoryId ?? ""}
+              className={fieldClass}
+            >
+              <option value="">All categories</option>
+              {options.categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                  {category.archived ? " (archived)" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="block text-xs font-medium text-ink-muted">
+            Status
+            <select
+              name="status"
+              defaultValue={filters.status ?? ""}
+              className={fieldClass}
+            >
+              <option value="">All statuses</option>
+              <option value="needs_review">Needs review</option>
+              <option value="confirmed">Confirmed</option>
+            </select>
+          </label>
+
+          <label className="block text-xs font-medium text-ink-muted">
+            Search
+            <input
+              type="search"
+              name="q"
+              maxLength={100}
+              placeholder="Description or merchant"
+              defaultValue={filters.query ?? ""}
+              className={fieldClass}
+            />
+          </label>
+
+          <div className="flex items-center gap-2 sm:col-span-2 lg:col-span-4">
+            <button
+              type="submit"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              Apply filters
+            </button>
+            {hasFilters ? (
+              <Link
+                href={`/transactions?month=${month}`}
+                className="text-xs text-ink-muted underline-offset-4 hover:text-ink hover:underline"
+              >
+                Clear
+              </Link>
+            ) : null}
+          </div>
+        </form>
+      </section>
+
       {result.totalCount === 0 ? (
         <div className="rounded-lg border border-dashed border-line bg-surface px-6 py-12 text-center">
           <p className="text-sm font-medium text-ink">
-            No transactions in {monthLabel}
+            {hasFilters
+              ? "No transactions match these filters"
+              : `No transactions in ${monthLabel}`}
           </p>
           <p className="mx-auto mt-2 max-w-sm text-xs leading-relaxed text-ink-muted">
-            Manual entry arrives in Week 3 and CSV import in Week 9. This page
-            already reads the real query, so the first row will appear here.
+            {hasFilters
+              ? "Try a wider date range, or clear the filters to see the whole month."
+              : "Add an expense above. CSV import arrives in Week 9."}
           </p>
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border border-line bg-surface">
-            <table className="min-w-full text-sm">
-              <caption className="sr-only">
-                Transactions for {monthLabel}
-              </caption>
-              <thead>
-                <tr className="border-b border-line text-left text-xs text-ink-muted">
-                  <th scope="col" className="whitespace-nowrap px-4 py-3 font-medium">
-                    Date
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-medium">
-                    Description
-                  </th>
-                  <th scope="col" className="hidden px-4 py-3 font-medium md:table-cell">
-                    Category
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-right font-medium">
-                    Amount
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.rows.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="border-b border-line last:border-0"
-                  >
-                    <td className="whitespace-nowrap px-4 py-3 align-top text-ink-muted">
-                      {formatDayLabel(row.occurredOn)}
-                    </td>
-                    <td className="px-4 py-3 align-top">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-ink">{row.description}</span>
-                        {row.status === "needs_review" ? (
-                          <span className="rounded-full border border-line px-2 py-0.5 text-[10px] uppercase tracking-wide text-ink-muted">
-                            Needs review
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-0.5 text-xs text-ink-muted">
-                        {row.merchant ? `${row.merchant} · ` : ""}
-                        {row.categoryName} · {row.accountName}
-                      </p>
-                    </td>
-                    <td className="hidden px-4 py-3 align-top text-ink-muted md:table-cell">
-                      {row.categoryName}
-                    </td>
-                    <td
-                      className={`whitespace-nowrap px-4 py-3 text-right align-top tabular-nums ${
-                        row.amountCents < 0 ? "text-danger" : "text-ink"
-                      }`}
-                    >
-                      {formatCents(row.amountCents)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <TransactionTable
+            rows={result.rows}
+            accounts={options.accounts}
+            categories={options.categories}
+          />
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs text-ink-muted">
@@ -217,13 +306,10 @@ export default async function TransactionsPage({
             </p>
 
             {result.pageCount > 1 ? (
-              <nav
-                aria-label="Pagination"
-                className="flex items-center gap-2"
-              >
+              <nav aria-label="Pagination" className="flex items-center gap-2">
                 {result.page > 1 ? (
                   <Link
-                    href={pageHref(month, result.page - 1)}
+                    href={listHref(month, result.page - 1, filters)}
                     className={paginationLink}
                   >
                     Previous
@@ -236,7 +322,7 @@ export default async function TransactionsPage({
                 </span>
                 {result.page < result.pageCount ? (
                   <Link
-                    href={pageHref(month, result.page + 1)}
+                    href={listHref(month, result.page + 1, filters)}
                     className={paginationLink}
                   >
                     Next

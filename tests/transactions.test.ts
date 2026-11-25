@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { expenseInputSchema } from "../src/lib/validation/transactions";
+import { expenseInputSchema, transactionInputSchema } from "../src/lib/validation/transactions";
 
 const valid = {
   amount: "12.35",
@@ -55,6 +55,30 @@ describe("expenseInputSchema", () => {
     ).toBe(false);
     expect(
       expenseInputSchema.safeParse({ ...valid, categoryId: "" }).success,
+    ).toBe(false);
+  });
+});
+
+describe("transactionInputSchema", () => {
+  const editing = { ...valid, id: "tx_1", direction: "out" };
+
+  it("accepts a complete edit", () => {
+    expect(transactionInputSchema.safeParse(editing).success).toBe(true);
+    expect(
+      transactionInputSchema.safeParse({ ...editing, direction: "in" }).success,
+    ).toBe(true);
+  });
+
+  it("requires the row being edited", () => {
+    expect(
+      transactionInputSchema.safeParse({ ...editing, id: "" }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a direction that is neither in nor out", () => {
+    expect(
+      transactionInputSchema.safeParse({ ...editing, direction: "sideways" })
+        .success,
     ).toBe(false);
   });
 });

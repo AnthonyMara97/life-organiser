@@ -17,6 +17,7 @@ export const navItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", tab: true },
   { label: "Accounts" },
   { label: "Transactions", href: "/transactions", tab: true },
+  { label: "Categories", href: "/categories" },
   { label: "Budgets", tab: true },
   { label: "Bills", tab: true },
   { label: "Reports" },

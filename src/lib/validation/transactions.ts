@@ -34,3 +34,22 @@ export const expenseInputSchema = z.object({
 });
 
 export type ExpenseInput = z.infer<typeof expenseInputSchema>;
+
+/**
+ * Editing an existing row.
+ *
+ * The quick-add form records money out only; the edit form has to be able to
+ * correct any row, including a positive one that arrived through an import. So
+ * the amount stays a positive dollars string and the direction carries the
+ * sign, which the server applies once rather than trusting a minus the user
+ * typed.
+ */
+export const transactionInputSchema = expenseInputSchema.extend({
+  id: z.string().min(1, "Choose a transaction"),
+  direction: z.enum(["out", "in"], "Choose money out or money in"),
+});
+
+export type TransactionInput = z.infer<typeof transactionInputSchema>;
+
+/** A transaction id arriving from the browser on its own. */
+export const transactionIdSchema = z.string().min(1, "Choose a transaction");

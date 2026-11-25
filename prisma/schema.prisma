@@ -186,6 +186,12 @@ model Transaction {
   // index, so only imported rows participate.
   fingerprint String?
 
+  // Soft delete (D27). Deleting a row sets this instead of removing it, so the
+  // 10-second undo is an update, not a re-insert, and it still works after the
+  // page has been reloaded. Every read filters `deletedAt: null` through one
+  // shared helper; a row without that filter is a bug, not a variant.
+  deletedAt DateTime? @db.Timestamptz(3)
+
   createdById String
   createdBy   User     @relation("TransactionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   createdAt   DateTime @default(now()) @db.Timestamptz(3)

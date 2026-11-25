@@ -47,6 +47,38 @@
   }
 }
 
+/* shadcn/ui's semantic names, expressed in this project's roles.
+ *
+ * shadcn components are written against background / foreground / muted /
+ * border rather than a palette, so mapping those names onto the tokens above
+ * means a copied component inherits the theme, including dark mode (D21), with
+ * no per-component overrides. They are aliases, not new colours: change a token
+ * above and everything follows.
+ *
+ * One deliberate exception: shadcn uses `--accent` for a hover surface, but
+ * `--accent` here is the strong action colour (buttons, active nav). The alias
+ * is therefore not defined — a registry component that needs a subtle hover
+ * should use `accent-soft`, which is what the shell already does. */
+:root {
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--accent);
+  --primary-foreground: var(--on-accent);
+  --secondary: var(--accent-soft);
+  --secondary-foreground: var(--ink);
+  --muted: var(--accent-soft);
+  --muted-foreground: var(--ink-muted);
+  --destructive: var(--danger);
+  --destructive-foreground: var(--on-accent);
+  --border: var(--line);
+  --input: var(--line);
+  --radius: 0.5rem;
+}
+
 @theme inline {
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
@@ -61,4 +93,22 @@
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-danger-line: var(--danger-line);
+
+  /* The shadcn aliases, so `bg-background`, `border-border` and friends work. */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
 }

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
 import { AppShell } from "@/components/app-shell";
+import { Toaster } from "@/components/ui/sonner";
 import { auth } from "@/lib/auth";
 
 // The gate for everything inside the shell. Checking here rather than in each
@@ -19,5 +20,11 @@ export default async function AppLayout({
     redirect("/login");
   }
 
-  return <AppShell email={session.user.email}>{children}</AppShell>;
+  return (
+    <AppShell email={session.user.email}>
+      {children}
+      {/* One toast surface for every screen under the shell (D28). */}
+      <Toaster />
+    </AppShell>
+  );
 }
