@@ -427,6 +427,7 @@ when a row reverses an earlier one. Two rows record a reversal: D10 reverses D7.
 | D27 | 2026-11-25 | **Deleting a transaction is a soft delete** (`deletedAt`); the 10-second undo clears the column | The undo has to survive a reload or a closed tab, which a browser-side delayed delete cannot, and it gives CSV import a reversible operation for free. The cost is one filter every read must apply, so it exists once, in `liveTransactionWhere` | Client-side delayed delete (no schema change, but the delete is lost on navigation); hard delete plus a separate audit table (more machinery than a two-person household needs) |
 | D28 | 2026-11-25 | **shadcn/ui's dialog and Sonner toast are introduced**, copied into `src/components/ui` and mapped onto the project's role tokens | This is the first UI that genuinely needs a focus-trapped dialog and a toast, which D19 anticipated. Hand-rolling the portal, focus trap and escape handling is where accessibility bugs come from. The CLI `init` was deliberately not used: it rewrites `globals.css` and assumes `--accent` means a hover surface, which is this project's strong action colour | Hand-rolled Tailwind dialog and toast; Radix primitives without the shadcn wrapper; deferring again and using a browser `confirm` |
 | D29 | 2026-11-25 | **The allowlist admits a third address: Anthony's software-development mentor, who reviews the work.** Extends D5 | Anthony wants the work reviewed by someone outside the household, and the allowlist is the only door in. The account is a normal `member` with the same access as the household, which Anthony confirmed is intended; read-only review access is not built | A read-only review role (more correct eventually, but there is no role enforcement to hang it on yet); sharing Anthony's account (no separation, and his session would change hands); no third access |
+| D30 | 2026-11-25 | **Cassidy's business account is an ordinary tracked account; its inflows are household income** | Her accounting software handles GST and tax before money reaches the account, so nothing has to be excluded and no draw adjustment is needed. One ledger, one set of rules, and her income is measured like Anthony's | A balance-only account excluded from reports (needs a flag plus a "the transfer counts as income" exception, which is easy to get wrong); keeping the business out of the app (loses both the balance and her income) |
 
 ## 13. Open technical questions
 
@@ -439,5 +440,23 @@ when a row reverses an earlier one. Two rows record a reversal: D10 reverses D7.
 4. Inter-account transfers appear in two bank CSVs — an outflow in one and an
    inflow in the other. The import must pair them (same magnitude, opposite
    sign, dates within a day or two, different accounts) or the monthly totals
-   count the same money twice. Decide auto-pair versus confirm-in-review when
-   FIN-8 is built.
+   count the same money twice. **Investigated 25 Nov 2026** — see
+   `docs/reference/csv-import-findings.md`. Real exports show that amount and
+   date alone produce false positives (11 candidates, several implausible; only
+   1 of 10 joint transfers matched even with three other accounts present), that
+   narrative tokens name the counterparty and do not cross-match between files,
+   and that some transfers (rainy-day credits) carry no keyword at all.
+   **Recommendation (proposed, not agreed):** record each account's own bank
+   reference, suggest candidates from keyword + reference + equal cents + date
+   window, require human confirmation, allow one-sided transfers, and exclude
+   only balanced groups from totals. Decide with Anthony before FIN-8.
+5. **No unique transaction id from the bank.** The `Serial` column in the data
+   export is empty, and the app export has no such column, so the current
+   date + amount + description fingerprint would drop a legitimate second
+   identical purchase. The dedupe rule has to become a multiset difference
+   against existing rows (insert only the excess), which also handles overlapping
+   export windows. Proposed, not built.
+6. **Which file format should the importer target?** CSV works but carries no
+   transaction type or unique id. OFX/QBO would provide both (`TRNTYPE`,
+   `FITID`); QIF marks transfers by category convention; PDF has neither and is
+   the most brittle. Compare formats before writing FIN-8.

@@ -284,6 +284,14 @@ leap years.
 
 **Focus:** the first real integration — untrusted data from outside the app.
 
+> 25 Nov 2026: real Westpac exports were analysed before the build. Two formats,
+> two date formats, opposite row orders, no unique transaction id, and transfer
+> detection that cannot be automatic — counts and conclusions in
+> `docs/reference/csv-import-findings.md`. The source format (CSV vs OFX/QIF/PDF)
+> is decided first; if OFX is available it replaces this week's parser work with a
+> structured format. The fingerprint bullet below is under review and will likely
+> become a multiset difference.
+
 **Build**
 - Upload form: `<input type="file">` accepting `.csv`, with size and type checks.
 - Hand-written CSV parser and fixtures: quoted fields, embedded commas and
@@ -296,7 +304,8 @@ leap years.
 defensively · idempotency · why the file is parsed in memory and discarded ·
 reporting a bad row by number instead of failing the whole import.
 
-**Your turn:** the fingerprint function and its tests.
+**Your turn (withdrawn 18 Nov — see the re-plan):** the fingerprint function and
+its tests. Built by the assistant instead.
 
 **Done when:** importing the same CSV twice produces zero duplicates, and every
 imported row is in the review queue.

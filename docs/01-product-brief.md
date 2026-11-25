@@ -53,10 +53,24 @@ How these are handled today, to be written down before build starts:
 | | |
 |---|---|
 | **Primary users** | Two adults in one household in Westmeadows, VIC |
-| **Accounts** | One per person, so entries show who added them **(confirm: separate logins, not a shared account)** |
+| **Logins** | One Google login per person (separate logins, proven 23 Nov); `Transaction.createdBy` records who entered a row |
 | **Primary device** | Phone — capture, check, tick off |
 | **Secondary device** | Desktop — planning, budgets, reports, bulk edits |
 | **Explicitly not for** | The public, friends, family, clients, tenants. There is no sign-up. |
+
+### Bank accounts (recorded 25 Nov 2026)
+
+Six accounts, all Westpac at the time of writing. Balances are derived, never
+stored (FIN-1).
+
+| Account | Who | Type | Role |
+|---|---|---|---|
+| Personal | Anthony | `transaction` | His pay lands here; transfers out to the joint accounts; his own spending |
+| Personal | Cassidy | `transaction` | Her disposable income lands here; transfers out; her own spending |
+| Business | Cassidy | `transaction` | Her business income. Tax and GST are handled by her accounting software and never enter this account, so its inflows are household income (D30). Transfers to personal are internal |
+| Joint spendings | Joint | `transaction` | Bills and the mortgage are paid from here. No “who paid” split — the budget is household-only |
+| Groceries | Joint | `transaction` | Grocery fund; purchases are the expense. The account balance and the monthly groceries budget are separate numbers |
+| Rainy day fund | Joint | `savings` | The D26 household savings target; a draw is a transfer back, or a direct expense if paid from the fund |
 
 The public GitHub repository exists for **employers**, not for users. It shows
 the code, the architecture, the decision-making and a seeded demo — never the
@@ -196,8 +210,9 @@ Explicitly out of scope. Listing these prevents drift.
 
 1. Which bank(s), and what columns does the CSV contain? Worth pasting a header
    row (with amounts removed) before the import milestone.
-2. Are bills paid from one account or split between you? Does the budget need a
-   "who paid" dimension, or only "household"?
+2. ~~Are bills paid from one account or split between you?~~ **Settled 25 Nov
+   2026:** bills and the mortgage are paid from the joint spendings account. The
+   budget needs no “who paid” dimension; it is household-only.
 3. **Budget period model** — under review now. Fortnightly, monthly, or two-tier.
    Blocks week 2.
 4. What are the two or three meals-related decisions that cause the most

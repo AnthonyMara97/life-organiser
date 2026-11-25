@@ -126,6 +126,18 @@ One screen that answers "where are we this month?".
 
 ### FIN-8 CSV import — P0
 
+> Status 25 Nov 2026: **not started (W9)**. Four one-month Westpac exports were
+> analysed (personal, joint spendings, groceries, rainy-day fund). They came in
+> **two different formats**, both with separate Debit/Credit columns, two date
+> formats, both row orders, and **no usable unique transaction id** (`Serial` is
+> empty). Transfer detection cannot be automatic: amount + date matching produced
+> false positives and only 1 of 10 joint transfers matched. The design, counts and
+> open questions are in `docs/reference/csv-import-findings.md`.
+>
+> **Before building:** compare CSV with OFX/QIF/PDF. OFX would provide both a
+> unique id (`FITID`) and an explicit transfer type (`TRNTYPE=XFER`), which
+> removes two of the hardest problems. PDF is the weakest option.
+
 Upload a bank CSV from the device, turn rows into transactions, never import the
 same row twice.
 
@@ -136,7 +148,9 @@ same row twice.
 
 - Upload a `.csv` via `<input type="file">` and a server action.
 - A CSV parser that handles quoted fields, embedded commas and CRLF line endings.
-- Column mapping UI: which column is date, amount, description.
+- Column mapping UI: which column is date, amount, description. The amount may be
+  one signed column **or a Debit/Credit pair** — the real Westpac exports use the
+  pair.
 - Preview of the first 20 rows before committing.
 - Duplicate detection via a fingerprint (date + amount + normalised description).
 - Imported rows land as `needs_review`, not `confirmed`.

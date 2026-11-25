@@ -1,15 +1,16 @@
 # 07 — Session Handover
 
 **Last updated:** 25 November 2026, end of the Wednesday session.
-**Week 3 is complete, committed and deployed** (`8ba692e`): edit and delete with
-the 10-second undo, categories with archive, and filters are live. They were
-verified at 390px locally, and the deployed app was checked signed in.
-**Next action:** Week 4's first blocking decision — how a transfer gets a
-category while `categoryId` is required.
+**Week 3 is complete, committed and deployed** (`8ba692e`).
+**The next action is a format decision, not Week 4:** compare CSV with OFX/QIF/PDF
+before building the importer, because the real exports showed transfer detection
+is not safely automatable. The six-account structure is recorded and the business
+account settled (D30). Evidence, counts and open questions:
+`docs/reference/csv-import-findings.md`.
 Run `git status -sb` before anything else.
 
 > **Position lives in `docs/00-status.md`.** Read that first: one page, the
-> milestone and build item, the settled decisions (`D1`–`D29`) and what is still
+> milestone and build item, the settled decisions (`D1`–`D30`) and what is still
 > open. This file is the detail behind it. A decision that appears in
 > `00-status.md` as settled is settled — cite it, do not re-open it.
 
@@ -20,7 +21,8 @@ Run `git status -sb` before anything else.
 ### 0.1 What landed today
 
 - **Soft delete (D27).** `Transaction.deletedAt`, migration
-  `20261125061937_soft_delete_transactions`, applied to the `dev` branch only.
+  `20261125061937_soft_delete_transactions`, applied to `dev` and then to
+  `production` (direct string) before the deploy.
   `liveTransactionWhere(householdId)` in `src/server/transactions.ts` is the one
   place `{ householdId, deletedAt: null }` is written; every list, count and sum
   spreads it.
@@ -49,6 +51,18 @@ Run `git status -sb` before anything else.
   off the right edge at 390px (actions now live under the description below `md`),
   and Sonner ignored the 80px offset under 600px and covered the tab bar
   (`mobileOffset` now set too).
+- **The six-account structure was recorded** in `docs/01-product-brief.md`: his
+  personal, Cassidy's personal, Cassidy's business, joint spendings, groceries,
+  and the rainy-day fund. Bills and the mortgage are paid from joint spendings —
+  that closes the brief's old “one account or split” question.
+- **D30: Cassidy's business account is an ordinary tracked account.** Tax and GST
+  are handled by her accounting software before money reaches it, so its inflows
+  are household income and no exclusion rule is needed.
+- **The import question was investigated with real exports** and is bigger than
+  assumed. Four one-month Westpac files showed two different formats, two date
+  formats, opposite row orders, no usable unique id, and transfer matching that
+  produced false positives. Full counts and recommendations:
+  `docs/reference/csv-import-findings.md`.
 
 ### 0.2 What is deployed
 
@@ -71,14 +85,21 @@ effect.
 
 ### 0.3 What is next
 
-Week 3 shipped on 25 Nov. The only thing left open on it is that production has
-no finance data, so the quick-add form still shows the setup note and edit/delete
-have not been exercised there; both were verified locally against `dev`.
+The import investigation changed the order. The CSVs work, but they carry no
+unique transaction id and only weak transfer hints — and everything about FIN-8
+depends on those two things.
 
-1. **Week 4's first blocking decision** — how a transfer gets a category while
-   `categoryId` is required. Put it in the standard shape before any code.
-2. **Then Week 4's build:** the accounts list with computed balances, the
-   dashboard totals, a month selector, and transfer pairs.
+1. **Compare export formats.** Ask Westpac for OFX/QIF and test a PDF statement.
+   OFX would give `FITID` (unique id) and `TRNTYPE=XFER` (explicit transfer),
+   removing both hard problems. Counts and reasoning:
+   `docs/reference/csv-import-findings.md`.
+2. **Decide the source and the transfer category.** Nullable `categoryId` is the
+   recommendation (`(proposed)`). Then the two-tier ledger, before FIN-8.
+3. **Then Week 4:** the accounts list with computed balances, the dashboard
+   totals, a month selector, and transfer pairs.
+
+Production still has no finance data, so the quick-add form shows the setup note
+and edit/delete have only been exercised locally against `dev`.
 
 ---
 
@@ -124,6 +145,8 @@ have not been exercised there; both were verified locally against `dev`.
 | Categories | ✅ `/categories`, create/rename/archive/restore, deployed |
 | Filters | ✅ Account, category, status, text, deployed |
 | shadcn/ui | ✅ Dialog + Sonner toast, role-token mapped, deployed |
+| Account structure | ✅ Six accounts recorded (brief); business is ordinary (D30) |
+| Import source | 🔎 Real exports analysed; format comparison is the next action |
 | Deployment | ✅ Live on the 25 Nov build (`8ba692e`); production schema up to date |
 | GitHub remote | ✅ `github.com/AnthonyMara97/life-organiser` |
 | `db:seed` | ⏸ Deferred until XC-4 (demo household) |
@@ -146,16 +169,19 @@ Pushed through `8ba692e`; the deploy check and this docs close follow it.
 
 ## 3. Next actions, in order
 
-1. **Week 4 decision:** transfers and the required `categoryId`. Options are a
-   hidden system "Transfer" category (no schema change), a nullable
-   `categoryId` (schema change, every read handles null), or a normal category
-   (reports get noise). Recommend the first; present it in the standard shape.
-2. **Then Week 4's build:** account list with computed balances, dashboard
-   totals, month selector, transfer pairs.
-3. **Two-tier ledger** before CSV import (W9).
-4. **Delete the dev fixture** after the first real data import, including the
-   archived "Test sub" category.
-5. **`db:seed` only when the demo household exists** (XC-4).
+1. **Compare export formats.** Ask Westpac whether it offers OFX/QIF downloads and
+   test a PDF statement against the CSV. Put the result in
+   `docs/reference/csv-import-findings.md`. Do not paste real exports into chat;
+   use `.imports/`.
+2. **Decide the import source** and the transfer category (nullable `categoryId`
+   proposed), then the two-tier ledger before FIN-8.
+3. **Week 4's build:** account list with computed balances, dashboard totals,
+   month selector, transfer pairs.
+4. **When Cassidy's exports are available**, re-export every account for the same
+   window and repeat the matching analysis; tonight's match rate is a floor.
+5. **Delete the dev fixture** after the first real data import, including the
+   archived "Test sub" category and the `.imports/` bank files.
+6. **`db:seed` only when the demo household exists** (XC-4).
 
 ---
 
@@ -269,6 +295,16 @@ exhausting Postgres. Migration commands need the **direct** production string.
     auto-deploys, so migrate the `production` branch with the direct string first;
     on 25 Nov that was done before the push. The same order applies to every
     future migration.
+24. **The two Westpac exports are different files.** The app export is 5 columns
+    (`Date, Description, Debit, Credit, Balance`), `dd Mon yyyy`, oldest first;
+    the internet-banking export is 8 columns
+    (`Bank Account, Date, Narrative, Debit Amount, Credit Amount, Balance,
+    Categories, Serial`), `dd/mm/yyyy`, **newest first**, and its `Serial` is
+    empty. Never hardcode columns or assume row order. Shapes and counts:
+    `docs/reference/csv-import-findings.md`.
+25. **Real bank exports never go in chat or git.** Use `.imports/` (ignored). Read
+    structure and counts only; do not echo balances, account numbers or merchant
+    names.
 
 ---
 
@@ -340,6 +376,27 @@ exhausting Postgres. Migration commands need the **direct** production string.
   “0 active · 0 archived”, both sections empty and the add form working. No
   console errors.
 
+**Import investigation (after the deploy)**
+
+- Four one-month Westpac exports were placed in `.imports/` and read locally —
+  header, format and aggregate patterns only.
+- Found: two export formats; `dd Mon yyyy` vs `dd/mm/yyyy`; oldest-first vs
+  newest-first; separate Debit/Credit columns everywhere; `$`/`CR`/`DR` balance
+  markers; `Serial` empty in all 48 data-export rows; balance reconciles 100% once
+  order is accounted for.
+- Transfer detection measured: keyword counts (personal 2, joint 10, groceries 4,
+  rainy day **0**); only 1 of 10 joint `TFR` rows matched a counterpart; amount +
+  date produced 11 candidates including 5 implausible groceries→personal ones and
+  2 ambiguous amounts; joint narratives carry 34 distinct tokens, **none** shared
+  with another file, because each export names the counterparty.
+- Conclusion recorded in `docs/reference/csv-import-findings.md`: suggest and
+  confirm, never auto-pair; store each account's own reference; allow one-sided
+  transfers; exclude only balanced groups; mask account numbers; replace the
+  fingerprint with a multiset difference; use the balance as a sanity check.
+- The upload labelled `joint-spendings.csv` was a byte-identical duplicate of the
+  personal export; the real joint data is the 8-column file. The windows did not
+  line up (groceries stopped on 5 Nov), so every match figure is a floor.
+
 **Not done, deliberately**
 
 - No finance data was created in production to exercise edit/delete there;
@@ -357,7 +414,8 @@ exhausting Postgres. Migration commands need the **direct** production string.
 | This file | The detail behind the status page |
 | `docs/05-working-agreement.md` | How decisions are made and what "done" means |
 | `docs/04-roadmap.md` | Week 4 is the next milestone; is the request current? |
-| `docs/03-architecture.md` | D27/D28 and the earlier decisions |
+| `docs/03-architecture.md` | D27/D28/D30 and the earlier decisions |
+| `docs/reference/csv-import-findings.md` | What the real exports showed; read before touching FIN-8 |
 | `docs/01-product-brief.md`, `docs/02-features.md` | Existing scope or new? |
 
 `docs/06-learning-log.md` is frozen. Read it for history only.
