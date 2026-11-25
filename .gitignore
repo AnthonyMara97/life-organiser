@@ -36,6 +36,10 @@ yarn-error.log*
 # clone knows which variables to set.
 !.env.example
 
+# local bank CSV samples for import design. Real account data never belongs in
+# the repository, even in history; these files are read locally and deleted.
+.imports/
+
 # vercel
 .vercel
 
