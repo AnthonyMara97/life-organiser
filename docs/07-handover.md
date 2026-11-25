@@ -1,11 +1,11 @@
 # 07 — Session Handover
 
 **Last updated:** 25 November 2026, end of the Wednesday session.
-**Week 3 is complete and committed** (`00e7bd8`): edit and delete with the
-10-second undo, categories with archive, and filters all work; they were verified
-at 390px in the browser. **Nothing is pushed yet.**
-**Next action:** apply `20261125061937_soft_delete_transactions` to production
-**before** the push, because `main` auto-deploys.
+**Week 3 is complete, committed and deployed** (`8ba692e`): edit and delete with
+the 10-second undo, categories with archive, and filters are live. They were
+verified at 390px locally, and the deployed app was checked signed in.
+**Next action:** Week 4's first blocking decision — how a transfer gets a
+category while `categoryId` is required.
 Run `git status -sb` before anything else.
 
 > **Position lives in `docs/00-status.md`.** Read that first: one page, the
@@ -56,12 +56,12 @@ Run `git status -sb` before anything else.
 |---|---|
 | Domain | `https://life-organiser-eight.vercel.app` |
 | Vercel project | `marafioti/life-organiser`, auto-deploys on push to `main` |
-| **Deployed code** | The **24 Nov** build (`9beca09`). Local `main` is one commit ahead (`00e7bd8`), unpushed |
+| **Deployed code** | The **25 Nov** build (`8ba692e`), auto-deployed from `main` |
 | Database | Neon branch `production`, **pooled** connection, `sslmode=verify-full` |
 | Env vars | `DATABASE_URL`, `AUTH_SECRET`, `ALLOWED_EMAILS`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` — **Production only** (D22) |
 | Google redirect URIs | `https://life-organiser-eight.vercel.app/api/auth/callback/google`, `http://localhost:3000/…`, `http://127.0.0.1:3000/…` |
 | Build command | `package.json`'s `build` → `prisma generate && next build`; no Vercel override |
-| **Production migration** | `20261124002343_phase1_finances` only. **`20261125061937_soft_delete_transactions` is pending** |
+| **Production migration** | All three applied; `20261125061937_soft_delete_transactions` ran on 25 Nov through the **direct** string |
 | Production rows | 1 household, 3 users, **0** accounts/transactions/budget periods/bills/categories |
 
 Verified from outside with no session: `/`, `/dashboard` and `/transactions`
@@ -69,19 +69,16 @@ return 307 to `/login`; `/login` renders; `/api/auth/providers` reports exactly
 the callback URI above. Changing any env var requires a redeploy before it takes
 effect.
 
-### 0.3 What Week 3 needs before it can ship
+### 0.3 What is next
 
-1. **Apply the migration to production, first.** Recreate `.env.production.local`
-   with the **direct** (non-pooled) production string, run
-   `prisma migrate deploy` through a temporary config that loads that file, verify
-   `migrate status`, then delete both files. The Vercel `DATABASE_URL` is pooled
-   and cannot run DDL. Until this is done, pushing ships code that selects a
-   column production does not have.
-2. **Push and verify on the deployed app:** list loads, a delete/undo round trip,
-   `/categories` loads. Production has no accounts or categories, so the
-   quick-add form still shows the setup note — expected, not broken.
-3. **Then Week 4.** Its first blocking decision is how a transfer gets a category
-   while `categoryId` is required. Put it in the standard shape before building.
+Week 3 shipped on 25 Nov. The only thing left open on it is that production has
+no finance data, so the quick-add form still shows the setup note and edit/delete
+have not been exercised there; both were verified locally against `dev`.
+
+1. **Week 4's first blocking decision** — how a transfer gets a category while
+   `categoryId` is required. Put it in the standard shape before any code.
+2. **Then Week 4's build:** the accounts list with computed balances, the
+   dashboard totals, a month selector, and transfer pairs.
 
 ---
 
@@ -113,7 +110,7 @@ effect.
 | `src/lib/money.ts` | ✅ `formatCents` and `parseCents`; tests |
 | Prisma | ✅ 7.10.1, client generated, CLI loads `.env.local` |
 | Prisma driver adapter | ✅ `@prisma/adapter-pg@7.10.1` + `pg@8.23.1`, in `src/lib/db.ts` |
-| Database | ✅ Neon project, Sydney. `production` and `dev`; production is one migration behind |
+| Database | ✅ Neon project, Sydney. `production` and `dev`; both migrated |
 | Google OAuth client | ✅ Created 19 Nov, Publishing status Testing |
 | **Auth.js** | ✅ `next-auth@5.0.0-beta.32`, pinned exactly |
 | Allowlist | ✅ Enforced server-side in `signIn`; 8 tests; both household accounts proven 24 Nov; a third address (the mentor) added 25 Nov (D29) |
@@ -123,11 +120,11 @@ effect.
 | Finance schema | ✅ `20261124002343_phase1_finances` on both branches; soft delete on `dev` only |
 | Transactions list | ✅ `/transactions`, month filter, pagination, total, states |
 | Quick-add form | ✅ Expense only; Zod + server action |
-| Edit / delete / undo | ✅ Verified 25 Nov, committed (`00e7bd8`) |
-| Categories | ✅ `/categories`, create/rename/archive/restore, committed |
-| Filters | ✅ Account, category, status, text, committed |
-| shadcn/ui | ✅ Dialog + Sonner toast, role-token mapped, committed |
-| Deployment | ✅ Live on the 24 Nov build; Week 3 committed but not pushed |
+| Edit / delete / undo | ✅ Verified 25 Nov, committed and deployed |
+| Categories | ✅ `/categories`, create/rename/archive/restore, deployed |
+| Filters | ✅ Account, category, status, text, deployed |
+| shadcn/ui | ✅ Dialog + Sonner toast, role-token mapped, deployed |
+| Deployment | ✅ Live on the 25 Nov build (`8ba692e`); production schema up to date |
 | GitHub remote | ✅ `github.com/AnthonyMara97/life-organiser` |
 | `db:seed` | ⏸ Deferred until XC-4 (demo household) |
 | Roadmap | ✅ 6 hours/week, 16 weeks; W4 is accounts, dashboard and transfers |
@@ -135,41 +132,30 @@ effect.
 Commit history, newest first:
 
 ```
+8ba692e docs: record the mentor's review access
+032b5d4 docs: close Week 3 — soft delete, categories and filters
 00e7bd8 feat(transactions): add edit, delete with undo, filters and categories
 e7f0e8c docs: record ALLOWED_EMAILS as Config
 a070413 docs: close Week 2 and start Week 3
 9beca09 feat(transactions): add the quick-add expense form
-105bc67 docs: record monthly periods, FIN-12 and the bill link
-26474b4 feat(transactions): add the month list with a running total
 ```
 
-`main` is one commit ahead of `origin/main`; the docs close commit follows this one.
+Pushed through `8ba692e`; the deploy check and this docs close follow it.
 
 ---
 
 ## 3. Next actions, in order
 
-1. **Production migration**, in this order:
-   - write `.env.production.local` containing only
-     `DATABASE_URL="<direct production string>"` (no `DATABASE_URL=` repeated
-     inside the value);
-   - create `tmp-prisma.production.config.ts` that loads that file and points at
-     `prisma/schema.prisma`, then
-     `pnpm prisma migrate deploy --config tmp-prisma.production.config.ts`;
-   - confirm with `pnpm prisma migrate status --config tmp-prisma.production.config.ts`;
-   - delete both temporary files. Never print the value.
-2. **Push** with `SSH_AUTH_SOCK=/tmp/ssh-agent.sock git push origin main` (check
-   `ssh-add -l` first), then verify the deployed app.
-3. **Week 4 decision:** transfers and the required `categoryId`. Options are a
+1. **Week 4 decision:** transfers and the required `categoryId`. Options are a
    hidden system "Transfer" category (no schema change), a nullable
    `categoryId` (schema change, every read handles null), or a normal category
    (reports get noise). Recommend the first; present it in the standard shape.
-4. **Then Week 4's build:** account list with computed balances, dashboard
+2. **Then Week 4's build:** account list with computed balances, dashboard
    totals, month selector, transfer pairs.
-5. **Two-tier ledger** before CSV import (W9).
-6. **Delete the dev fixture** after the first real data import, including the
+3. **Two-tier ledger** before CSV import (W9).
+4. **Delete the dev fixture** after the first real data import, including the
    archived "Test sub" category.
-7. **`db:seed` only when the demo household exists** (XC-4).
+5. **`db:seed` only when the demo household exists** (XC-4).
 
 ---
 
@@ -201,7 +187,7 @@ Everything lives inside Ubuntu, not Windows.
 | Local connection | branch `dev`, **direct**, `sslmode=require` |
 | Deployed connection | branch `production`, **pooled** (`-pooler`), `sslmode=verify-full`, in Vercel |
 | Migrations on `dev` | `20261119044104_init`, `20261124002343_phase1_finances`, `20261125061937_soft_delete_transactions` |
-| Migrations on `production` | the first two only — **soft delete is pending** |
+| Migrations on `production` | all three; `20261125061937_soft_delete_transactions` applied 25 Nov with the direct string |
 | Production migration URL | the **direct** production string, never the pooled Vercel one |
 | Household row | ✅ one per branch |
 | User rows | ✅ 3 in production: Anthony, his wife, and his mentor for review (D29) |
@@ -279,9 +265,10 @@ exhausting Postgres. Migration commands need the **direct** production string.
     extension** — not in the in-app browser, which has no Google session. Verify
     at 390px with `emulate` (390×844), then reset the viewport and navigate the
     lent tab back to the production dashboard.
-23. **Nothing may be pushed until the production migration is applied.** `main`
-    auto-deploys; code selecting `deletedAt` against the un-migrated production
-    branch would break every transactions request.
+23. **A schema change reaches production before the code that needs it.** `main`
+    auto-deploys, so migrate the `production` branch with the direct string first;
+    on 25 Nov that was done before the push. The same order applies to every
+    future migration.
 
 ---
 
@@ -339,9 +326,24 @@ exhausting Postgres. Migration commands need the **direct** production string.
   who reviews the work (D29). The account is a normal `member`; production now
   has 3 `User` rows. Anthony confirmed full member access is intended.
 
+**Deploy**
+
+- `20261125061937_soft_delete_transactions` was applied to `production` with the
+  **direct** string through a temporary config, verified with `migrate status`
+  and `information_schema` (`deletedAt` present), then both temporary files were
+  deleted. Production rows were unchanged: 1 household, 3 users, 0 finance rows.
+- Pushed `e7f0e8c..8ba692e`. Vercel deployed; `/categories` answers 307 to
+  `/login` while an unknown route still answers 404, which proves the new build
+  is the one serving.
+- Signed-in check on the deployed app: `/transactions` renders the filter bar and
+  “Manage categories” with the setup note (no accounts yet); `/categories` renders
+  “0 active · 0 archived”, both sections empty and the add form working. No
+  console errors.
+
 **Not done, deliberately**
 
-- No push and no production migration: the migration has to run before the deploy.
+- No finance data was created in production to exercise edit/delete there;
+  production stays at 0 finance rows until the first real import.
 - The dev fixture now includes one archived "Test sub" category from the check.
 
 ---

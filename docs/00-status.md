@@ -9,22 +9,21 @@
 
 ---
 
-**POSITION:** Week 3 complete — edit/delete with the 10-second undo, category
-management with archive, and filters all work and were verified at 390px. The
-change is **committed on `main` (`00e7bd8`) and not pushed**. Production still
-runs the 24 Nov build and is **one migration behind**, so nothing may be pushed
-until the `deletedAt` migration is applied there. **Next: migrate production →
-push and verify → Week 4.**
+**POSITION:** Week 3 complete and deployed — edit/delete with the 10-second undo,
+category management with archive, and filters are live; they were verified at
+390px locally, and the deployed app was checked signed in. Production schema is
+up to date. **Next: Week 4 — decide how a transfer gets a category, then build
+the accounts list and the dashboard.**
 
 **Deployed at:** `https://life-organiser-eight.vercel.app` (auto-deploys from
 `main`; production data on the Neon `production` branch).
 
 | | |
 |---|---|
-| **Done** | Database on Neon (19 Nov) · Auth.js + allowlist (20 Nov) · `User` provisioning (21 Nov) · separate `dev` data branch (23 Nov) · app shell closed against XC-3 (23 Nov) · **deployed and signed in from a phone (23 Nov)** · **two-person allowlist test (24 Nov)** · **Phase 1 finance schema + production migration (24 Nov)** · **transactions list (24 Nov)** · **quick-add expense form (24 Nov)** · **edit/delete with a 10-second undo, soft delete (25 Nov)** · **categories with archive (25 Nov)** · **filters — account, category, status, text (25 Nov)** · **mentor review access (25 Nov)** |
-| **In progress** | Week 3 close-out only: production migration, push and deploy verification |
+| **Done** | Database on Neon (19 Nov) · Auth.js + allowlist (20 Nov) · `User` provisioning (21 Nov) · separate `dev` data branch (23 Nov) · app shell closed against XC-3 (23 Nov) · **deployed and signed in from a phone (23 Nov)** · **two-person allowlist test (24 Nov)** · **Phase 1 finance schema + production migration (24 Nov)** · **transactions list (24 Nov)** · **quick-add expense form (24 Nov)** · **edit/delete with a 10-second undo, soft delete (25 Nov)** · **categories with archive (25 Nov)** · **filters — account, category, status, text (25 Nov)** · **mentor review access (25 Nov)** · **Week 3 deployed to production (25 Nov)** |
+| **In progress** | Week 4, before any code: the transfer / `categoryId` decision |
 | **Not started** | Week 4 (accounts and the dashboard; transfers) · bills (W8), CSV import (W9), income allocation (W10), hardening (W11) |
-| **Unverified** | The quick-add form on the deployed app (production has no accounts or categories yet) · the whole Week 3 change on the deployed app, because it has not been pushed · transfer pairing in CSV import · the two-tier ledger for imported rows |
+| **Unverified** | The quick-add form on the deployed app (production has no accounts or categories yet, so it shows the setup note) · edit/delete on the deployed app for the same reason — both were verified locally against `dev` · transfer pairing in CSV import · the two-tier ledger for imported rows |
 
 ## Awaiting decision
 
@@ -94,6 +93,6 @@ patch of this repo is not evidence about any of them.
   real data import. Production has **0** finance rows.
 - **`pnpm db:seed` remains deferred** until the demo household exists (XC-4); a
   second household would break `provisionUser`'s single-household rule.
-- **Production is one migration behind** (`20261125061937_soft_delete_transactions`
-  is applied to `dev` only). `.env.production.local` does not currently exist;
-  recreate it with the **direct** production string, never the pooled one.
+- **Production is up to date:** all three migrations are applied, including
+  `20261125061937_soft_delete_transactions` (25 Nov, direct connection). The
+  temporary `.env.production.local` and its config were deleted after use.
