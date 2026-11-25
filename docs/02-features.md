@@ -47,8 +47,9 @@ reconciled.
 
 The core record. Everything else is derived from it.
 
-> Status 24 Nov 2026: the quick-add expense form is built. Edit/delete,
-> transfers and the filters remain.
+> Status 25 Nov 2026: quick-add, the month list, edit/delete with the 10-second
+> undo (soft delete, D27) and the filters are built and verified at 390px.
+> Transfers remain.
 
 - Fields: date, amount (signed cents), account, category, merchant/description,
   note, created by, source (`manual` / `import` / `ai`), status
@@ -62,12 +63,18 @@ The core record. Everything else is derived from it.
 **Acceptance criteria**
 
 - [ ] Adding an expense from the phone takes ≤ 5 seconds and ≤ 4 interactions.
-- [ ] The amount is stored as integer cents; $12.35 saves as `1235`, never `12.35`.
-- [ ] A transaction can never be saved without an account and a category.
-- [ ] Deleting is reversible for 10 seconds.
+- [x] The amount is stored as integer cents; $12.35 saves as `1235`, never `12.35`.
+- [x] A transaction can never be saved without an account and a category.
+- [x] Deleting is reversible for 10 seconds.
 - [ ] The list never shows another household's rows, under any filter.
 
 ### FIN-3 Categories — P0
+
+> Status 25 Nov 2026: management exists at `/categories` — create (name, kind,
+> optional parent), rename, archive and restore, one level of subcategories
+> enforced server-side. A parent with live children cannot be archived. Archived
+> categories keep their history and leave the quick-add list. The starter seed
+> still arrives with `db:seed` (XC-4), so it is not built yet.
 
 - Income and expense categories, with one level of subcategories.
 - Seeded with a starter set (Groceries, Rent, Utilities, Transport, Eating out,

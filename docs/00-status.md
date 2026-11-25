@@ -9,19 +9,22 @@
 
 ---
 
-**POSITION:** Week 2 complete (schema + transactions list) · **Week 3 started** —
-the quick-add expense form is shipped; edit/delete with undo, category management
-and filters remain · deployed with the Phase 1 schema.
+**POSITION:** Week 3 complete — edit/delete with the 10-second undo, category
+management with archive, and filters all work and were verified at 390px. The
+change is **committed on `main` (`00e7bd8`) and not pushed**. Production still
+runs the 24 Nov build and is **one migration behind**, so nothing may be pushed
+until the `deletedAt` migration is applied there. **Next: migrate production →
+push and verify → Week 4.**
 
 **Deployed at:** `https://life-organiser-eight.vercel.app` (auto-deploys from
 `main`; production data on the Neon `production` branch).
 
 | | |
 |---|---|
-| **Done** | Database on Neon (19 Nov) · Auth.js + allowlist (20 Nov) · `User` provisioning (21 Nov) · separate `dev` data branch (23 Nov) · app shell closed against XC-3 (23 Nov) · **deployed and signed in from a phone (23 Nov)** · **two-person allowlist test (24 Nov)** · **Phase 1 finance schema + production migration (24 Nov)** · **transactions list (24 Nov)** · **quick-add expense form (24 Nov)** |
-| **In progress** | Week 3 — edit/delete with a 10-second undo, category management, filters |
-| **Not started** | The rest of Week 3 · bills (W8), CSV import (W9), income allocation (W10), hardening (W11) |
-| **Unverified** | The quick-add form on the deployed app: production has no accounts or categories yet, so it shows the setup note · transfer pairing in CSV import · the two-tier ledger for imported rows |
+| **Done** | Database on Neon (19 Nov) · Auth.js + allowlist (20 Nov) · `User` provisioning (21 Nov) · separate `dev` data branch (23 Nov) · app shell closed against XC-3 (23 Nov) · **deployed and signed in from a phone (23 Nov)** · **two-person allowlist test (24 Nov)** · **Phase 1 finance schema + production migration (24 Nov)** · **transactions list (24 Nov)** · **quick-add expense form (24 Nov)** · **edit/delete with a 10-second undo, soft delete (25 Nov)** · **categories with archive (25 Nov)** · **filters — account, category, status, text (25 Nov)** |
+| **In progress** | Week 3 close-out only: production migration, push and deploy verification |
+| **Not started** | Week 4 (accounts and the dashboard; transfers) · bills (W8), CSV import (W9), income allocation (W10), hardening (W11) |
+| **Unverified** | The quick-add form on the deployed app (production has no accounts or categories yet) · the whole Week 3 change on the deployed app, because it has not been pushed · transfer pairing in CSV import · the two-tier ledger for imported rows |
 
 ## Awaiting decision
 
@@ -29,13 +32,14 @@ Each of these must be put to Anthony in the standard shape — the decision, two
 three options, a recommendation stating what it entails and why, the cost to
 reverse. Never as a bare question.
 
-1. **Week 3 edit/delete: the undo model and whether to introduce shadcn/ui now.**
-   D19 deferred shadcn; the dialog and toast are the first real use. The 10-second
-   undo needs either a soft delete or a client-side delayed delete — a data-model
-   choice, not syntax.
+1. **How a transfer is recorded (Week 4).** `Transfer` rows are two linked
+   `Transaction`s, and `categoryId` is currently required on every row — so a
+   transfer either gets a hidden system category, or `categoryId` becomes
+   nullable, or it borrows a normal category and pollutes the reports. A data-model
+   choice, not syntax. Decide before building the transfer form.
 2. **The two-tier ledger** (`needs_review` / `confirmed`): whether the monthly
-   overview counts imported rows before review. Deferred from 21 Nov; it now
-   affects real numbers.
+   overview counts imported rows before review. Deferred from 21 Nov; needed
+   before CSV import (W9).
 
 ## Settled — do not re-ask, do not present as a choice
 
@@ -69,6 +73,8 @@ Full reasoning in `03-architecture.md` §12; environments in §11. Cite the ID.
 | D24 | FIN-12 income allocation is P1; AI capture is cut from the 16-week plan |
 | D25 | `Transaction.billId` links a payment to the bill it settles |
 | D26 | One household savings target (amount + date); no goals module |
+| D27 | Deleting a transaction is a **soft delete** (`deletedAt`); undo clears it |
+| D28 | shadcn/ui's dialog and Sonner toast are in, adapted to the role tokens |
 
 **When a document and the live system disagree, the live system wins — say so and
 ask.** Neon, Google Cloud and Vercel hold state this repository cannot see. A
@@ -76,12 +82,16 @@ patch of this repo is not evidence about any of them.
 
 ## Housekeeping
 
-- **`ALLOWED_EMAILS` is now type Config** (recreated 24 Nov; one Production row,
+- **`ALLOWED_EMAILS` is type Config** (recreated 24 Nov; one Production row,
   readable with Reveal Value). The value holds both addresses. The Secret type
   was the cause of the 24 Nov lockout — keep this one Config.
-- **The `dev` branch carries a temporary fixture:** 3 accounts, 6 categories,
-  3 budget periods and 26 fictional transactions (25 fixture rows plus one
-  quick-add test). Delete it after the first real data import. Production has
-  **0** finance rows.
+- **The `dev` branch carries a temporary fixture:** 3 accounts, 3 budget periods
+  and 26 fictional transactions (25 fixture rows plus the quick-add test), and
+  7 categories — 6 active plus **one archived "Test sub"** created and archived
+  during the 25 Nov phone verification. Delete the whole fixture after the first
+  real data import. Production has **0** finance rows.
 - **`pnpm db:seed` remains deferred** until the demo household exists (XC-4); a
   second household would break `provisionUser`'s single-household rule.
+- **Production is one migration behind** (`20261125061937_soft_delete_transactions`
+  is applied to `dev` only). `.env.production.local` does not currently exist;
+  recreate it with the **direct** production string, never the pooled one.

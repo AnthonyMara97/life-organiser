@@ -137,8 +137,10 @@ timestamps — do not let `new Date()` sneak in.
 
 **Focus:** the full CRUD loop, done properly.
 
-> 24 Nov 2026: the quick-add expense form is built (expense-only). Edit/delete,
-> category management and filters remain.
+> 25 Nov 2026: **complete.** Quick-add, edit/delete with the 10-second undo (soft
+> delete, D27), category management with archive, and filters (account, category,
+> status, text) are built and verified at 390px; 60 tests. shadcn's dialog and
+> toast came in with it (D28).
 
 **Build**
 - Quick-add transaction form (amount, category, account, date, description).
@@ -150,8 +152,8 @@ timestamps — do not let `new Date()` sneak in.
 **Learn:** server actions · form validation on both sides · optimistic UI ·
 accessibility basics (labels, focus, keyboard) · soft delete and why.
 
-**Your turn:** the delete-with-undo interaction. I will give you the shape and
-review, but you write it.
+**Your turn (withdrawn 18 Nov — see the re-plan):** the delete-with-undo
+interaction. Built by the assistant instead.
 
 **Done when:** you can add a cash expense on your phone in under five seconds and
 undo a mistaken delete.

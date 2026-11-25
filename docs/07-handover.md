@@ -1,14 +1,15 @@
 # 07 — Session Handover
 
-**Last updated:** 24 November 2026, end of the Tuesday session.
-**Week 1 and Week 2 are complete.** Week 3 has started: the quick-add expense
-form works.
-**Next action:** decide the undo model and whether to introduce shadcn/ui, then
-finish Week 3's edit/delete, categories and filters.
+**Last updated:** 25 November 2026, end of the Wednesday session.
+**Week 3 is complete and committed** (`00e7bd8`): edit and delete with the
+10-second undo, categories with archive, and filters all work; they were verified
+at 390px in the browser. **Nothing is pushed yet.**
+**Next action:** apply `20261125061937_soft_delete_transactions` to production
+**before** the push, because `main` auto-deploys.
 Run `git status -sb` before anything else.
 
 > **Position lives in `docs/00-status.md`.** Read that first: one page, the
-> milestone and build item, the settled decisions (`D1`–`D26`) and what is still
+> milestone and build item, the settled decisions (`D1`–`D28`) and what is still
 > open. This file is the detail behind it. A decision that appears in
 > `00-status.md` as settled is settled — cite it, do not re-open it.
 
@@ -18,27 +19,36 @@ Run `git status -sb` before anything else.
 
 ### 0.1 What landed today
 
-- **The two-person allowlist test closed.** Anthony's wife signed in **before**
-  her address was in `ALLOWED_EMAILS` and got our `?error=AccessDenied` page with
-  the household message; after the address was added and the deployment was
-  redeployed, she reached the dashboard. Both accounts now work. XC-1 is done.
-- **The budget period question is settled (D23–D26):** monthly periods, with
-  allocation triggered by each income event; FIN-12 is P1 and AI capture is cut
-  from the 16-week plan; `Transaction.billId`; a single household savings target.
-- **The Phase 1 finance schema exists:** `Account`, `Category`, `Transaction`,
-  `BudgetPeriod`, `BudgetLine`, `Bill`, `ImportBatch`, `AiUsage`, with the enums,
-  indexes, `billId`, `fingerprint` and the savings target. Migration
-  `20261124002343_phase1_finances`.
-- **The migration was applied to production** with the **direct** connection,
-  not the pooled one, and verified: 1 household, 2 users, 0 finance rows.
-- **The transactions list exists** at `/transactions`: server-rendered, month
-  filter (Melbourne boundaries), 20-row pagination, net total, empty/loading/error
-  states, 390px checked.
-- **The quick-add expense form exists** on the same page: amount, date, account,
-  category, description; Zod on the server; dollars parsed to integer cents;
-  money out stored negative; errors keep the submitted values; success redirects
-  to the transaction's month.
-- **Pushed.** `main` and `origin/main` are level at the session-close commit.
+- **Soft delete (D27).** `Transaction.deletedAt`, migration
+  `20261125061937_soft_delete_transactions`, applied to the `dev` branch only.
+  `liveTransactionWhere(householdId)` in `src/server/transactions.ts` is the one
+  place `{ householdId, deletedAt: null }` is written; every list, count and sum
+  spreads it.
+- **Edit.** A shadcn dialog per row: amount as positive dollars plus a Money out /
+  Money in choice, so the sign is applied on the server. Archived accounts and
+  categories are allowed on edit (old rows stay fixable) but not on create. The
+  update is an `updateMany` scoped by household and `deletedAt: null`, so a stale
+  form cannot revive a row deleted in another tab.
+- **Delete with undo.** No confirm dialog. The row leaves the list optimistically,
+  the delete writes `deletedAt`, and a toast offers Undo for 10 seconds. Undo
+  clears the column. Verified: count 26→25, net $2,595.76→$2,608.10, undo back to
+  26 and $2,595.76, and the row really held `deletedAt` in Postgres between the
+  two.
+- **Categories (FIN-3).** `/categories`: create (name, expense/income, optional
+  parent), rename, archive, restore; one level of subcategories enforced
+  server-side. A parent with live children cannot be archived (disabled button
+  plus a server check). Archived categories keep their history and leave the
+  quick-add list; the filter lists still show them, labelled "(archived)".
+- **Filters (FIN-2).** Account, category, status and free-text search (description,
+  merchant, note; case-insensitive in Postgres). The count, net total and
+  pagination all follow the filters; month and page links keep them.
+- **shadcn/ui (D28).** Dialog and Sonner toast, copied in and mapped to the
+  project's role tokens so D21 still holds. Four dependencies added:
+  `@radix-ui/react-dialog`, `sonner`, `clsx`, `tailwind-merge`.
+- **Two bugs found by the phone check and fixed:** the table's Delete button sat
+  off the right edge at 390px (actions now live under the description below `md`),
+  and Sonner ignored the 80px offset under 600px and covered the tab bar
+  (`mobileOffset` now set too).
 
 ### 0.2 What is deployed
 
@@ -46,44 +56,32 @@ Run `git status -sb` before anything else.
 |---|---|
 | Domain | `https://life-organiser-eight.vercel.app` |
 | Vercel project | `marafioti/life-organiser`, auto-deploys on push to `main` |
+| **Deployed code** | The **24 Nov** build (`9beca09`). Local `main` is one commit ahead (`00e7bd8`), unpushed |
 | Database | Neon branch `production`, **pooled** connection, `sslmode=verify-full` |
 | Env vars | `DATABASE_URL`, `AUTH_SECRET`, `ALLOWED_EMAILS`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` — **Production only** (D22) |
 | Google redirect URIs | `https://life-organiser-eight.vercel.app/api/auth/callback/google`, `http://localhost:3000/…`, `http://127.0.0.1:3000/…` |
 | Build command | `package.json`'s `build` → `prisma generate && next build`; no Vercel override |
-| Production migration | `20261124002343_phase1_finances` applied 24 Nov with the **direct** production string |
-| Production rows | 1 household, 2 users, **0** accounts/transactions/budget periods/bills |
+| **Production migration** | `20261124002343_phase1_finances` only. **`20261125061937_soft_delete_transactions` is pending** |
+| Production rows | 1 household, 2 users, **0** accounts/transactions/budget periods/bills/categories |
 
-Verified from outside with no session: `/` and `/dashboard` return 307 to
-`/login`; `/login` renders; `/transactions` returns 307 to `/login`;
-`/api/auth/providers` reports exactly the callback URI above. Changing any env
-var requires a redeploy before it takes effect.
+Verified from outside with no session: `/`, `/dashboard` and `/transactions`
+return 307 to `/login`; `/login` renders; `/api/auth/providers` reports exactly
+the callback URI above. Changing any env var requires a redeploy before it takes
+effect.
 
-### 0.3 Still open, and what Week 3 needs
+### 0.3 What Week 3 needs before it can ship
 
-**The undo model and shadcn/ui** — the next blocking decision. FIN-2 says a
-delete is reversible for 10 seconds. That needs either a soft delete
-(`deletedAt` and a filter everywhere) or a client-side delayed delete (the row
-is removed from the UI, the database delete is scheduled, undo cancels it). The
-roadmap also says to use shadcn's dialog here; D19 deferred shadcn and this is
-its first real use. Put the decision in the standard shape before building the
-edit/delete step.
-
-**The two-tier ledger** (`needs_review` / `confirmed`) — still open from 21 Nov.
-It now affects real numbers: if the monthly overview ignores unreviewed imported
-rows, it understates spending; if it counts them, it is complete but unreconciled.
-Decide before CSV import (W9).
-
-**`db:seed` is still deferred** until the demo household exists (XC-4): a second
-household would break `provisionUser`'s exactly-one-household rule. The page is
-verified with a **temporary fixture** in `dev` instead: 3 accounts, 6 categories,
-3 budget periods, 26 fictional transactions (25 fixture rows + one quick-add
-test). Delete it after the first real data import — Anthony's instruction.
-
-**`ALLOWED_EMAILS` is now type Config** (recreated 24 Nov; one Production row,
-readable with Reveal Value). The value holds both addresses. The Secret type was
-the cause of today's lockout: the edit form showed an empty value and saving
-replaced the whole list. Keep this variable Config — it is an email list, not a
-credential.
+1. **Apply the migration to production, first.** Recreate `.env.production.local`
+   with the **direct** (non-pooled) production string, run
+   `prisma migrate deploy` through a temporary config that loads that file, verify
+   `migrate status`, then delete both files. The Vercel `DATABASE_URL` is pooled
+   and cannot run DDL. Until this is done, pushing ships code that selects a
+   column production does not have.
+2. **Push and verify on the deployed app:** list loads, a delete/undo round trip,
+   `/categories` loads. Production has no accounts or categories, so the
+   quick-add form still shows the setup note — expected, not broken.
+3. **Then Week 4.** Its first blocking decision is how a transfer gets a category
+   while `categoryId` is required. Put it in the standard shape before building.
 
 ---
 
@@ -97,7 +95,7 @@ credential.
 - **Decisions belong to Anthony.** Present the decision, two or three options, a
   recommendation with what it entails and what could go wrong, the cost to
   reverse. Then stop. `AGENTS.md` has the full shape.
-- **Check whether it is already decided.** `00-status.md` lists D1–D26; if a row
+- **Check whether it is already decided.** `00-status.md` lists D1–D28; if a row
   answers it, cite the ID and move on.
 - **Review before commit.** Show what changed and why, in plain English, then
   commit. One logical change per commit.
@@ -115,50 +113,63 @@ credential.
 | `src/lib/money.ts` | ✅ `formatCents` and `parseCents`; tests |
 | Prisma | ✅ 7.10.1, client generated, CLI loads `.env.local` |
 | Prisma driver adapter | ✅ `@prisma/adapter-pg@7.10.1` + `pg@8.23.1`, in `src/lib/db.ts` |
-| Database | ✅ Neon project, Sydney. `production` (deployed) and `dev` (local). Same two migrations on both |
+| Database | ✅ Neon project, Sydney. `production` and `dev`; production is one migration behind |
 | Google OAuth client | ✅ Created 19 Nov, Publishing status Testing |
 | **Auth.js** | ✅ `next-auth@5.0.0-beta.32`, pinned exactly |
 | Allowlist | ✅ Enforced server-side in `signIn`; 8 tests; both household accounts proven 24 Nov |
-| Sign-in page | ✅ `/login` renders and redirects to Google |
-| `Household` row | ✅ One per branch; `production` copied into `dev` |
-| `User` provisioning | ✅ Built and verified 21 Nov; production has 2 users |
-| App UI | ✅ Shell closed against XC-3 on 23 Nov |
-| Finance schema | ✅ Migration `20261124002343_phase1_finances`; applied to both branches |
+| `Household` row | ✅ One per branch |
+| `User` provisioning | ✅ Production has 2 users |
+| App UI | ✅ Shell closed against XC-3 |
+| Finance schema | ✅ `20261124002343_phase1_finances` on both branches; soft delete on `dev` only |
 | Transactions list | ✅ `/transactions`, month filter, pagination, total, states |
-| Quick-add form | ✅ Expense only; Zod + server action; verified locally |
-| Deployment | ✅ Live; Phase 1 schema on production; `/transactions` behind auth |
+| Quick-add form | ✅ Expense only; Zod + server action |
+| Edit / delete / undo | ✅ Verified 25 Nov, committed (`00e7bd8`) |
+| Categories | ✅ `/categories`, create/rename/archive/restore, committed |
+| Filters | ✅ Account, category, status, text, committed |
+| shadcn/ui | ✅ Dialog + Sonner toast, role-token mapped, committed |
+| Deployment | ✅ Live on the 24 Nov build; Week 3 committed but not pushed |
 | GitHub remote | ✅ `github.com/AnthonyMara97/life-organiser` |
 | `db:seed` | ⏸ Deferred until XC-4 (demo household) |
-| Roadmap | ✅ 6 hours/week, 16 weeks; W10 is income allocation, AI moved to Phase 4 |
+| Roadmap | ✅ 6 hours/week, 16 weeks; W4 is accounts, dashboard and transfers |
 
 Commit history, newest first:
 
 ```
+00e7bd8 feat(transactions): add edit, delete with undo, filters and categories
+e7f0e8c docs: record ALLOWED_EMAILS as Config
+a070413 docs: close Week 2 and start Week 3
 9beca09 feat(transactions): add the quick-add expense form
 105bc67 docs: record monthly periods, FIN-12 and the bill link
 26474b4 feat(transactions): add the month list with a running total
-f83bf65 feat(db): add the Phase 1 finance schema
-fbd57f3 docs: finish the Week 1 handover for the next agent
-af81d67 docs: close Week 1 — deployed, signed in on a phone
-46b87da docs: close XC-3, record D21 and put accounts in the folder tree
 ```
 
-`main` and `origin/main` were level at the close commit.
+`main` is one commit ahead of `origin/main`; the docs close commit follows this one.
 
 ---
 
 ## 3. Next actions, in order
 
-1. **Decide the undo model + shadcn/ui** (standard shape) — blocks edit/delete.
-2. **Finish Week 3:** edit and delete with the 10-second undo; category
-   management with archive; filters (account, category, status, text).
-3. **Decide the two-tier ledger** before CSV import.
-4. **Add `db:seed` only when the demo household exists** (XC-4). A second
-   household needs an `isDemo` flag and per-user household resolution first.
-5. **Recreate `ALLOWED_EMAILS` as Config**; it is still write-only.
-6. **Delete the dev fixture** after the first real data import.
-7. **Production migrations:** use the **direct** production string, not the
-   pooled one. The Vercel `DATABASE_URL` is pooled and cannot run DDL.
+1. **Production migration**, in this order:
+   - write `.env.production.local` containing only
+     `DATABASE_URL="<direct production string>"` (no `DATABASE_URL=` repeated
+     inside the value);
+   - create `tmp-prisma.production.config.ts` that loads that file and points at
+     `prisma/schema.prisma`, then
+     `pnpm prisma migrate deploy --config tmp-prisma.production.config.ts`;
+   - confirm with `pnpm prisma migrate status --config tmp-prisma.production.config.ts`;
+   - delete both temporary files. Never print the value.
+2. **Push** with `SSH_AUTH_SOCK=/tmp/ssh-agent.sock git push origin main` (check
+   `ssh-add -l` first), then verify the deployed app.
+3. **Week 4 decision:** transfers and the required `categoryId`. Options are a
+   hidden system "Transfer" category (no schema change), a nullable
+   `categoryId` (schema change, every read handles null), or a normal category
+   (reports get noise). Recommend the first; present it in the standard shape.
+4. **Then Week 4's build:** account list with computed balances, dashboard
+   totals, month selector, transfer pairs.
+5. **Two-tier ledger** before CSV import (W9).
+6. **Delete the dev fixture** after the first real data import, including the
+   archived "Test sub" category.
+7. **`db:seed` only when the demo household exists** (XC-4).
 
 ---
 
@@ -189,11 +200,12 @@ Everything lives inside Ubuntu, not Windows.
 | Branches | `dev` (local development) and `production` (the deployed app) |
 | Local connection | branch `dev`, **direct**, `sslmode=require` |
 | Deployed connection | branch `production`, **pooled** (`-pooler`), `sslmode=verify-full`, in Vercel |
-| Migrations | `20261119044104_init`, `20261124002343_phase1_finances` — applied to both |
+| Migrations on `dev` | `20261119044104_init`, `20261124002343_phase1_finances`, `20261125061937_soft_delete_transactions` |
+| Migrations on `production` | the first two only — **soft delete is pending** |
 | Production migration URL | the **direct** production string, never the pooled Vercel one |
 | Household row | ✅ one per branch |
 | User rows | ✅ 2 in production |
-| Finance rows | ✅ 0 in production; 26 fictional rows in `dev` (fixture) |
+| Finance rows | ✅ 0 in production; 26 fictional rows + 7 categories in `dev` |
 
 Pooling is deliberately **off** in the local URL: `prisma migrate` cannot run
 through a pooled connection. The deployed app takes the pooled production
@@ -209,18 +221,16 @@ exhausting Postgres. Migration commands need the **direct** production string.
    short `.sh` to `/mnt/c/Users/amara/AppData/Local/Temp/opencode/` and run it
    with `wsl -d Ubuntu --cd /home/anthony/repos/life-organiser -- bash
    /mnt/c/.../x.sh`. Scripts should `[ -f package.json ]` rather than `cd`.
-3. **The push needs Anthony's passphrase once per WSL session — set the agent up
-   immediately, then never ask again.** The fixed socket is `/tmp/ssh-agent.sock`.
-   Check `SSH_AUTH_SOCK=/tmp/ssh-agent.sock ssh-add -l` first; if the key is
-   listed, just push. To unlock, launch a WSL window running:
+3. **The push needs Anthony's passphrase once per WSL session.** The fixed socket
+   is `/tmp/ssh-agent.sock`. Check `SSH_AUTH_SOCK=/tmp/ssh-agent.sock ssh-add -l`
+   first. To unlock, launch a WSL window running:
    ```bash
    ssh-agent -a /tmp/ssh-agent.sock
    SSH_AUTH_SOCK=/tmp/ssh-agent.sock ssh-add ~/.ssh/id_ed25519
    read -p "Press Enter to close..."
    ```
-   Then every push uses `SSH_AUTH_SOCK=/tmp/ssh-agent.sock git push origin main`.
-   Anything that talks to the remote (`ls-remote`, `fetch`) needs the socket too,
-   or it waits for a passphrase no agent can type.
+   Anything that talks to the remote (`ls-remote`, `fetch`, `push`) needs the
+   socket too, or it waits for a passphrase no agent can type.
 4. **`pnpm build` writes to stderr on success**, and **`pnpm add` prints a red
    `ERR_PNPM_IGNORED_BUILDS` even when the package installs.** Read the exit
    path, not the colour.
@@ -243,102 +253,90 @@ exhausting Postgres. Migration commands need the **direct** production string.
     print it or paste it into chat. The same applies to `AUTH_GOOGLE_SECRET` and
     `AUTH_SECRET`; the client id is public.
 14. **`localhost:3000` is the host with the browser session.** `127.0.0.1:3000`
-    was blocked for Next dev resources on 24 Nov (cross-origin HMR). Use
-    `localhost` for the authenticated dev app.
+    was blocked for Next dev resources on 24 Nov (cross-origin HMR).
 15. **`pg` warns about `sslmode=require`** on every run; it currently behaves as
-    `verify-full`. The local `dev` string still says `require`; production says
-    `verify-full`.
+    `verify-full`. The local `dev` string still says `require`.
 16. **Production migrations need the direct branch string.** The Vercel
     `DATABASE_URL` is pooled (`-pooler`) and `prisma migrate deploy` cannot run
     DDL through it. Put the direct string in `.env.production.local` (ignored),
-    use a temporary config that loads **that** file, run `prisma migrate deploy
-    --config tmp-prisma.production.config.ts`, then delete both. Never let
-    `prisma.config.ts` load `.env.local` for this.
+    use a temporary config that loads **that** file, run
+    `prisma migrate deploy --config tmp-prisma.production.config.ts`, then delete
+    both.
 17. **The `.env.production.local` line is just the connection string.** Anthony
     pasted the whole `DATABASE_URL=...` assignment after the key on 24 Nov, so
     the value started with `DATABASE_URL="…"`. Normalise before use; do not print
     the value.
-18. **`ALLOWED_EMAILS` was a Secret** and Secret values are write-only: the edit
-    form showed an empty field and saving replaced the whole list. That locked
-    both users out on 24 Nov. It was recreated as **Config** the same day; keep
-    it Config.
-19. **Vitest needs the `@/` alias.** `vitest.config.mts` maps `@` to `./src`;
-    without it, a tested module that imports `@/lib/...` fails only under test.
+18. **`ALLOWED_EMAILS` is Config, not Secret.** Secret values are write-only: the
+    edit form showed empty and saving replaced the whole list, which locked both
+    users out on 24 Nov. Keep it Config.
+19. **Vitest needs the `@/` alias.** `vitest.config.mts` maps `@` to `./src`.
+20. **After a schema change, run `pnpm prisma generate` before `pnpm typecheck`.**
+    On 25 Nov `migrate dev` applied the SQL but the generated client still lacked
+    `deletedAt`, and the type error looked like a code problem.
+21. **Sonner's `offset` is ignored below 600px wide.** Set `mobileOffset` as well
+    or the toast lands on the phone tab bar. Both are now 80px.
+22. **The signed-in browser session is in Anthony's Chrome, via the browse
+    extension** — not in the in-app browser, which has no Google session. Verify
+    at 390px with `emulate` (390×844), then reset the viewport and navigate the
+    lent tab back to the production dashboard.
+23. **Nothing may be pushed until the production migration is applied.** `main`
+    auto-deploys; code selecting `deletedAt` against the un-migrated production
+    branch would break every transactions request.
 
 ---
 
 ## 5. What was actually done
 
-### 24 November — Tuesday
+### 25 November — Wednesday
 
-**Allowlist and access**
+**Data model**
 
-- His wife signed in before her address was added: Google let her through (she
-  was already a test user), our `signIn` callback returned false, and she saw
-  `/login` with *"That account is not on the household allowlist."* No `User`
-  row was created. That is the rejection evidence XC-1 lacked.
-- The Vercel `ALLOWED_EMAILS` turned out to be a **Secret**, so the value was
-  never visible; Anthony had replaced it with her address and locked both users
-  out. The value now holds both addresses, and both accounts reach the dashboard.
-- The variable is now type Config (recreated 24 Nov; see §0.3).
+- `Transaction.deletedAt` (nullable timestamptz) and migration
+  `20261125061937_soft_delete_transactions`, applied to `dev`.
+- `liveTransactionWhere(householdId)` added to `src/server/transactions.ts` and
+  used by the list, the count, the sum and the delete/undo statements.
+- `updateTransaction`, `deleteTransaction` and `undoDeleteTransaction` server
+  actions; `transactionInputSchema` adds the row id and the direction, and
+  rejects a category whose kind does not match it.
 
-**Decisions**
+**Transactions UI**
 
-- **D23:** monthly budget periods, with allocation triggered by each income
-  event. The month is the reporting frame; the deposit is the action frame.
-- **D24:** FIN-12 income allocation is P1 Phase 1; AI capture is cut from the
-  16-week plan.
-- **D25:** `Transaction.billId`, so paid-bill history is a query.
-- **D26:** one household savings target (amount + date), no goals module.
+- `transaction-table.tsx`: optimistic delete and restore, the 10-second toast,
+  actions under the description below `md` and in a column above it.
+- `edit-transaction-dialog.tsx`: shadcn dialog, positive amount plus direction,
+  values preserved on error, closes once on success.
+- `page.tsx`: filter bar (account, category, status, text) as a plain GET form;
+  filtered count, net, pagination and month links; "Manage categories" link.
 
-**Schema and migration**
+**Categories**
 
-- Added `Account`, `Category`, `Transaction`, `BudgetPeriod`, `BudgetLine`,
-  `Bill`, `ImportBatch`, `AiUsage`, the enums, `billId`, `fingerprint`, the
-  savings target and the indexes.
-- `prisma migrate dev --name phase1_finances` created
-  `20261124002343_phase1_finances` and applied it to `dev`.
-- Applied it to `production` with the **direct** string and verified
-  `migrate status` and row counts. The Vercel deploy was already live, so the
-  migration came before the code that needs it.
-- Fixed a paste mistake in `.env.production.local` without printing the value;
-  the file and temp config were deleted after use.
+- `src/server/categories.ts` (one grouped count query, live child counts),
+  `src/actions/categories.ts` (create, rename, archive/restore, parent rules),
+  `/categories` page with `loading.tsx` and `error.tsx`, create form and rename
+  dialog.
 
-**Transactions list**
+**shadcn/ui**
 
-- `src/server/transactions.ts`: household-scoped month query, count, sum and
-  pagination; `getQuickAddOptions` for active accounts and expense categories.
-- `src/app/(app)/transactions/page.tsx`: server component, month nav, table,
-  net total, pagination, empty/loading/error states.
-- `src/lib/dates.ts`: `todayInTimeZone`, `monthBounds`, `isMonth`, `isoDay`,
-  `formatDayLabel`, `formatMonthLabel`; tests for DST, leap years and invalid
-  input.
-- `src/lib/money.ts`: `formatCents`, then `parseCents`; tests for the shapes
-  people type and for rejecting a third decimal.
-- Verified at 390px and desktop; month fallback for an invalid month; page 2 of
-  25 rows.
-
-**Quick-add expense form**
-
-- `src/lib/validation/transactions.ts`: Zod schema; impossible days rejected.
-- `src/actions/transactions.ts`: session → household, Zod, account/category
-  re-check, `parseCents`, store negative cents, `revalidatePath`, redirect to the
-  transaction's month.
-- `src/components/transactions/quick-add-form.tsx`: client form with
-  `useActionState`; per-field errors; submitted values preserved on error by
-  remounting the form with the returned values.
-- Verified locally: invalid amount shows the error and keeps the typed values;
-  a valid $12.34 expense appears as −$12.34 and moves the net from $2,608.10 to
-  $2,595.76.
-- Added `vitest.config.mts` so `@/` imports resolve under test.
+- `components.json`, `src/lib/utils.ts`, `src/components/ui/dialog.tsx`,
+  `src/components/ui/sonner.tsx`, `<Toaster />` in the app layout, semantic CSS
+  aliases in `globals.css` (the accent collision is documented there).
+- Dependencies: `@radix-ui/react-dialog`, `sonner`, `clsx`, `tailwind-merge`.
 
 **Verification**
 
-- `pnpm typecheck`, `pnpm lint`, `pnpm test` — **47 tests** pass.
-- `pnpm build` passes with `/transactions` dynamic.
-- Production: `/transactions` 307 to `/login`; `/login` 200; migration status up
-  to date.
-- Pushed all commits; `main` and `origin/main` level at the close commit.
+- `pnpm typecheck`, `pnpm lint`, `pnpm test` — **60 tests** pass; `pnpm build`
+  passes with `/categories` and `/transactions` dynamic.
+- 390px pass in the signed-in browser: delete → undo, edit → save → restore,
+  text/category/status filters, month nav keeping filters, category create,
+  archive, restore, rename, and the disabled-archive guard on a parent.
+- The database showed the row with `deletedAt` set between delete and undo.
+- Two layout bugs found and fixed (mobile actions off-screen; toast over the tab
+  bar), then re-checked.
+
+**Not done, deliberately**
+
+- No push and no production migration: the migration has to run before the deploy.
+- The dev fixture now includes one archived "Test sub" category from the check.
 
 ---
 
@@ -350,9 +348,9 @@ exhausting Postgres. Migration commands need the **direct** production string.
 | `AGENTS.md` | Standing rules. Overrides general defaults |
 | This file | The detail behind the status page |
 | `docs/05-working-agreement.md` | How decisions are made and what "done" means |
-| `docs/04-roadmap.md` | Is the request the current milestone? |
-| `docs/03-architecture.md` | Is there a recorded decision this contradicts? |
-| `docs/01-product-brief.md`, `docs/02-features.md` | Is this existing scope or new? |
+| `docs/04-roadmap.md` | Week 4 is the next milestone; is the request current? |
+| `docs/03-architecture.md` | D27/D28 and the earlier decisions |
+| `docs/01-product-brief.md`, `docs/02-features.md` | Existing scope or new? |
 
 `docs/06-learning-log.md` is frozen. Read it for history only.
 
@@ -360,10 +358,11 @@ exhausting Postgres. Migration commands need the **direct** production string.
 
 ## 7. The session's architectural concept
 
-**A period is an aggregation window; a deposit is an event.** The month is where
-totals are compared and the budget is reviewed; the deposit is where a decision
-is made about what to do with the money. Keeping those separate is why one model
-handles a fortnightly salary and irregular invoices without inventing a period
-for each. The quick-add form makes the matching point about boundaries: the
-browser sends a request, and the server re-derives the household, the account,
-the category and the cents before anything is written.
+**A soft delete turns a destructive action into a state change.** The row never
+leaves the table, so the undo is one column update that still works after a
+reload — and the price is that every read must ask the same question. That is why
+the filter lives in one helper (`liveTransactionWhere`) rather than in each
+query: a forgotten `deletedAt: null` puts a deleted transaction back into a
+total, silently. The delete toast makes the same point from the other end: the
+ten seconds is the toast's lifetime, not a countdown in the browser, so nothing
+about the data depends on the page staying open.
